@@ -25,9 +25,6 @@
             background-clip: text;
         }
 
-        .border-gold { border-color: #D4AF37; }
-        
-        /* Glass Panel */
         .glass-panel {
             background: #111;
             border: 1px solid #222;
@@ -57,6 +54,7 @@
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             transition: 0.2s;
+            cursor: pointer;
         }
         .btn-action:hover { transform: scale(1.1); }
 
@@ -241,7 +239,7 @@
                     </tr>
                 `;
             });
-            document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2}) + ' ฿';
         }
 
         // --- ACTIONS ---
@@ -274,9 +272,10 @@
             }
         };
 
-        // 2. Deposit/Withdraw Modal (Easy Flow)
+        // 2. Deposit/Withdraw Modal (FIXED LOGIC)
         window.openTxModal = async (code, nick) => {
-            const { value: type } = await Swal.fire({
+            // Step 1: Choose Type
+            const result = await Swal.fire({
                 title: `ทำรายการ: ${nick}`,
                 text: 'เลือกประเภทรายการ',
                 background: '#111', color: '#fff',
@@ -287,18 +286,19 @@
                 cancelButtonText: 'ยกเลิก'
             });
 
-            if (type) {
-                // If confirmed (Deposit) or denied (Withdraw)
-                const isDeposit = type === true; 
-                // Ask for Amount
+            if (result.isConfirmed || result.isDenied) {
+                const isDeposit = result.isConfirmed;
+                const actionText = isDeposit ? 'ฝากเงิน' : 'ถอนเงิน';
+                
+                // Step 2: Enter Amount
                 const { value: amount } = await Swal.fire({
-                    title: isDeposit ? 'จำนวนเงินฝาก' : 'จำนวนเงินถอน',
+                    title: `ระบุจำนวนเงิน${actionText}`,
                     input: 'number',
                     inputAttributes: { min: 1 },
                     background: '#111', color: '#fff',
                     confirmButtonText: 'ยืนยัน', confirmButtonColor: '#D4AF37',
                     inputValidator: (value) => {
-                        if (!value) return 'กรุณาใส่จำนวนเงิน!'
+                        if (!value || value <= 0) return 'กรุณาใส่จำนวนเงินที่ถูกต้อง!'
                     }
                 });
 
@@ -309,17 +309,14 @@
                         amount: amount,
                         date: new Date().toISOString()
                     });
+                    
                     Swal.fire({ 
                         icon: 'success', 
-                        title: isDeposit ? 'ฝากเงินเรียบร้อย' : 'ถอนเงินเรียบร้อย', 
-                        text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} บาท`,
+                        title: 'บันทึกสำเร็จ', 
+                        text: `${actionText} ${parseFloat(amount).toLocaleString()} บาท`,
                         timer: 1500, showConfirmButton: false, background:'#111', color:'#fff' 
                     });
                 }
-            } else if (type === false) {
-                // Handle Withdraw Logic (Same as above, reused inside the if block for simplicity, logic handled by sweetalert result)
-                // Note: SweetAlert returns true for confirm, false for deny.
-                // Re-implementing logic correctly inside the first block.
             }
         };
 
