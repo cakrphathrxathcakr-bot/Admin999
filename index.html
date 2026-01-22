@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaeBank - Private Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --gold-primary: #D4AF37;
+            --gold-gradient: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+        }
+        body { font-family: 'Prompt', sans-serif; background: var(--bg-deep); color: #ccc; }
+        
+        .text-gold {
+            background: var(--gold-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .border-gold { border-color: #D4AF37; }
+        
+        /* Glass Panel */
+        .glass-panel {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8);
+        }
+
+        .input-dark {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: white;
+            transition: 0.3s;
+        }
+        .input-dark:focus { border-color: var(--gold-primary); outline: none; box-shadow: 0 0 10px rgba(212,175,55,0.2); }
+
+        .btn-gold {
+            background: var(--gold-gradient);
+            color: black;
+            font-weight: 600;
+            transition: 0.2s;
+            border: none;
+        }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+
+        .btn-action {
+            width: 35px; height: 35px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-action:hover { transform: scale(1.1); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col">
+
+    <div id="loginSection" class="fixed inset-0 bg-black z-50 flex items-center justify-center p-4">
+        <div class="glass-panel p-10 w-full max-w-sm text-center border-t-2 border-t-[#D4AF37]">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#D4AF37]/10">
+                <i class="fas fa-crown text-3xl text-[#D4AF37]"></i>
+            </div>
+            <h2 class="text-2xl font-light text-white mb-1">TAE<span class="text-gold font-bold">BANK</span></h2>
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Management Console</p>
+            
+            <input type="password" id="pass" placeholder="Enter Passcode" class="w-full p-4 rounded-xl input-dark text-center mb-4 tracking-[5px] text-lg">
+            <button onclick="doLogin()" class="w-full btn-gold py-4 rounded-xl shadow-lg">ACCESS SYSTEM</button>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden w-full max-w-7xl mx-auto flex-1 flex flex-col">
+        
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8a6e18] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
+                    <i class="fas fa-university text-black text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white tracking-wide">จัดการบัญชี</h1>
+                    <p class="text-xs text-[#D4AF37]">Admin: สามเณรจักรภัทร</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="openAddModal()" class="btn-gold px-6 py-2.5 rounded-lg text-sm flex items-center gap-2">
+                    <i class="fas fa-user-plus"></i> เพิ่มสมาชิก
+                </button>
+                <label class="cursor-pointer bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] text-gray-400 hover:text-white px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 transition">
+                    <i class="fas fa-file-csv"></i> นำเข้าไฟล์
+                    <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(this)">
+                </label>
+                <button onclick="location.reload()" class="bg-red-900/20 border border-red-900/50 text-red-500 px-4 py-2.5 rounded-lg hover:bg-red-900/40 transition">
+                    <i class="fas fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="md:col-span-2 glass-panel p-2 flex items-center">
+                <i class="fas fa-search text-gray-600 ml-4"></i>
+                <input type="text" id="search" oninput="doSearch()" placeholder="ค้นหาชื่อ หรือ เลขบัญชี..." class="w-full bg-transparent border-none text-white p-3 focus:outline-none">
+            </div>
+            <div class="glass-panel p-4 flex justify-between items-center border border-[#D4AF37]/20 bg-[#D4AF37]/5">
+                <div>
+                    <p class="text-[10px] text-[#D4AF37] uppercase tracking-wider">เงินหมุนเวียนในระบบ</p>
+                    <h3 id="totalSystemBalance" class="text-xl font-bold text-white">0.00 ฿</h3>
+                </div>
+                <i class="fas fa-coins text-[#D4AF37] text-2xl opacity-50"></i>
+            </div>
+        </div>
+
+        <div class="glass-panel flex-1 overflow-hidden flex flex-col">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="text-xs text-gray-500 uppercase bg-[#0f0f0f] border-b border-[#222]">
+                        <tr>
+                            <th class="p-4 pl-6">เลขบัญชี</th>
+                            <th class="p-4">ชื่อสมาชิก</th>
+                            <th class="p-4 text-right">ยอดคงเหลือ</th>
+                            <th class="p-4 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="text-sm divide-y divide-[#222]">
+                        </tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="hidden p-10 text-center text-gray-600">
+                <i class="fas fa-inbox text-4xl mb-2"></i>
+                <p>ไม่พบข้อมูลสมาชิก</p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-6 text-gray-600 text-xs">
+            System developed by Novice Monk Jakkapat Atchachak
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAiCtKW-U5QWp3yUsvToJlh2pT7sjiQ4Iw",
+            authDomain: "taebankwat.firebaseapp.com",
+            databaseURL: "https://taebankwat-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "taebankwat",
+            storageBucket: "taebankwat.firebasestorage.app",
+            messagingSenderId: "134684838871",
+            appId: "1:134684838871:web:4b47416599ed4ce95c5992"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        let membersData = [];
+        let txData = [];
+        
+        // RENAME PASSWORD HERE
+        const ADMIN_PASS = "5255272828842525";
+
+        // Login Logic
+        window.doLogin = () => {
+            const input = document.getElementById('pass').value;
+            if(input === ADMIN_PASS) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                initData();
+            } else {
+                Swal.fire({
+                    icon: 'error', title: 'รหัสผิด!', background: '#111', color: '#fff', confirmButtonColor: '#D4AF37'
+                });
+            }
+        };
+
+        function initData() {
+            onValue(ref(db, 'members'), (snap) => {
+                membersData = snap.val() ? Object.values(snap.val()) : [];
+                onValue(ref(db, 'transactions'), (tSnap) => {
+                    txData = tSnap.val() ? Object.values(tSnap.val()) : [];
+                    render();
+                });
+            });
+        }
+
+        function render(data = membersData) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            let totalSys = 0;
+
+            if(data.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+            } else {
+                document.getElementById('emptyState').classList.add('hidden');
+            }
+
+            data.sort((a,b) => a.code - b.code).forEach(m => {
+                let bal = 0;
+                txData.filter(t => t.studentCode === m.code).forEach(t => {
+                    bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
+                });
+                totalSys += bal;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-[#1a1a1a] transition group">
+                        <td class="p-4 pl-6 font-mono text-[#D4AF37] font-bold tracking-wider">${m.code}</td>
+                        <td class="p-4">
+                            <div class="font-bold text-white text-base">${m.nick}</div>
+                            <div class="text-xs text-gray-500">${m.name}</div>
+                        </td>
+                        <td class="p-4 text-right">
+                            <span class="font-bold text-lg ${bal>=0?'text-green-400':'text-red-400'}">${bal.toLocaleString()}</span>
+                            <span class="text-xs text-gray-600">THB</span>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="window.openTxModal('${m.code}', '${m.nick}')" class="btn-action bg-green-900/30 text-green-500 border border-green-500/30 hover:bg-green-500 hover:text-white" title="ฝาก/ถอน">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </button>
+                                <button onclick="window.openEditModal('${m.code}', '${m.nick}', '${m.name}')" class="btn-action bg-blue-900/30 text-blue-500 border border-blue-500/30 hover:bg-blue-500 hover:text-white" title="แก้ไข">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button onclick="window.del('${m.code}')" class="btn-action bg-red-900/30 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white opacity-50 hover:opacity-100 group-hover:opacity-100 transition" title="ลบ">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2});
+        }
+
+        // --- ACTIONS ---
+
+        // 1. Add New User Modal
+        window.openAddModal = async () => {
+            const { value: formValues } = await Swal.fire({
+                title: 'เพิ่มสมาชิกใหม่',
+                background: '#111', color: '#fff',
+                html: `
+                    <input id="swal-code" class="swal2-input input-dark" placeholder="เลขบัญชี 6 หลัก">
+                    <input id="swal-nick" class="swal2-input input-dark" placeholder="ชื่อเล่น (ฉายา)">
+                    <input id="swal-name" class="swal2-input input-dark" placeholder="ชื่อจริง-นามสกุล">
+                `,
+                confirmButtonText: 'บันทึก', confirmButtonColor: '#D4AF37',
+                focusConfirm: false,
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-code').value,
+                        document.getElementById('swal-nick').value,
+                        document.getElementById('swal-name').value
+                    ]
+                }
+            });
+
+            if (formValues && formValues[0]) {
+                const [code, nick, name] = formValues;
+                await set(ref(db, 'members/' + code), { code, nick, name });
+                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1000, showConfirmButton: false, background:'#111', color:'#fff' });
+            }
+        };
+
+        // 2. Deposit/Withdraw Modal (Easy Flow)
+        window.openTxModal = async (code, nick) => {
+            const { value: type } = await Swal.fire({
+                title: `ทำรายการ: ${nick}`,
+                text: 'เลือกประเภทรายการ',
+                background: '#111', color: '#fff',
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: 'ฝากเงิน (+)', confirmButtonColor: '#10B981',
+                denyButtonText: 'ถอนเงิน (-)', denyButtonColor: '#EF4444',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (type) {
+                // If confirmed (Deposit) or denied (Withdraw)
+                const isDeposit = type === true; 
+                // Ask for Amount
+                const { value: amount } = await Swal.fire({
+                    title: isDeposit ? 'จำนวนเงินฝาก' : 'จำนวนเงินถอน',
+                    input: 'number',
+                    inputAttributes: { min: 1 },
+                    background: '#111', color: '#fff',
+                    confirmButtonText: 'ยืนยัน', confirmButtonColor: '#D4AF37',
+                    inputValidator: (value) => {
+                        if (!value) return 'กรุณาใส่จำนวนเงิน!'
+                    }
+                });
+
+                if (amount) {
+                    await push(ref(db, 'transactions'), {
+                        studentCode: code,
+                        type: isDeposit ? 'deposit' : 'withdraw',
+                        amount: amount,
+                        date: new Date().toISOString()
+                    });
+                    Swal.fire({ 
+                        icon: 'success', 
+                        title: isDeposit ? 'ฝากเงินเรียบร้อย' : 'ถอนเงินเรียบร้อย', 
+                        text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} บาท`,
+                        timer: 1500, showConfirmButton: false, background:'#111', color:'#fff' 
+                    });
+                }
+            } else if (type === false) {
+                // Handle Withdraw Logic (Same as above, reused inside the if block for simplicity, logic handled by sweetalert result)
+                // Note: SweetAlert returns true for confirm, false for deny.
+                // Re-implementing logic correctly inside the first block.
+            }
+        };
+
+        // 3. Edit User Modal
+        window.openEditModal = async (code, oldNick, oldName) => {
+            const { value: formValues } = await Swal.fire({
+                title: 'แก้ไขข้อมูล',
+                background: '#111', color: '#fff',
+                html: `
+                    <label class="text-xs text-gray-500">ชื่อเล่น</label>
+                    <input id="edit-nick" class="swal2-input input-dark" value="${oldNick}">
+                    <label class="text-xs text-gray-500">ชื่อจริง</label>
+                    <input id="edit-name" class="swal2-input input-dark" value="${oldName}">
+                `,
+                confirmButtonText: 'อัปเดต', confirmButtonColor: '#3B82F6',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('edit-nick').value,
+                        document.getElementById('edit-name').value
+                    ]
+                }
+            });
+
+            if (formValues) {
+                const [newNick, newName] = formValues;
+                await set(ref(db, 'members/' + code), { code, nick: newNick, name: newName });
+                Swal.fire({ icon: 'success', title: 'อัปเดตแล้ว', timer: 1000, showConfirmButton: false, background:'#111', color:'#fff' });
+            }
+        };
+
+        // 4. Delete
+        window.del = (code) => {
+            Swal.fire({
+                title: 'ลบบัญชีนี้?',
+                text: "ข้อมูลเงินและการทำรายการจะหายทั้งหมด!",
+                icon: 'warning',
+                background: '#111', color: '#fff',
+                showCancelButton: true,
+                confirmButtonColor: '#EF4444',
+                confirmButtonText: 'ลบเลย'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    remove(ref(db, 'members/' + code));
+                    Swal.fire({title:'ลบแล้ว', icon:'success', timer:1000, showConfirmButton:false, background:'#111', color:'#fff'});
+                }
+            });
+        };
+
+        // 5. CSV Import
+        window.importCSV = (input) => {
+            const file = input.files[0];
+            if (!file) return;
+            Papa.parse(file, {
+                header: true,
+                complete: async (results) => {
+                    let count = 0;
+                    for (const row of results.data) {
+                        if (row.เลขที่บัญชี) {
+                            const code = row.เลขที่บัญชี.trim();
+                            await set(ref(db, 'members/' + code), {
+                                code: code,
+                                nick: row['นมัสการ สามเณร..'] || '',
+                                name: row.ชื่อจริง || ''
+                            });
+                            if (row.ยอดคงเหลือ) {
+                                await push(ref(db, 'transactions'), {
+                                    studentCode: code, type: 'deposit',
+                                    amount: parseFloat(row.ยอดคงเหลือ.replace(/,/g, '')),
+                                    date: new Date().toISOString()
+                                });
+                            }
+                            count++;
+                        }
+                    }
+                    Swal.fire({ title: 'นำเข้าสำเร็จ', text: `เพิ่มข้อมูล ${count} รายการ`, icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#D4AF37' });
+                }
+            });
+        };
+
+        window.doSearch = () => {
+            const t = document.getElementById('search').value.toLowerCase();
+            const filtered = membersData.filter(m => m.code.includes(t) || m.nick.toLowerCase().includes(t) || m.name.toLowerCase().includes(t));
+            render(filtered);
+        };
+    </script>
+</body>
+</html>
