@@ -2,148 +2,177 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaeBank - Private Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TaeBank - Wealth Manager Console</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Sarabun:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         :root {
-            --bg-deep: #050505;
+            --bg-vanta: #050505;
+            --bg-panel: #121212;
             --gold-primary: #D4AF37;
-            --gold-gradient: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+            --gold-grad: linear-gradient(135deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+            --border-dark: #222222;
         }
-        body { font-family: 'Prompt', sans-serif; background: var(--bg-deep); color: #ccc; }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: var(--bg-vanta);
+            color: #F5F5F5;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-eng { font-family: 'Cinzel', serif; }
+        .font-num { font-family: 'Space Grotesk', sans-serif; }
         
         .text-gold {
-            background: var(--gold-gradient);
+            background: var(--gold-grad);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        .bg-gold { background: var(--gold-grad); color: #000; }
 
-        .glass-panel {
-            background: #111;
-            border: 1px solid #222;
+        /* Panels */
+        .glass-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-dark);
             border-radius: 16px;
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
+        /* Inputs */
         .input-dark {
-            background: #0a0a0a;
-            border: 1px solid #333;
-            color: white;
-            transition: 0.3s;
+            background: #0a0a0a; border: 1px solid #333; color: white; transition: 0.3s; width: 100%;
         }
         .input-dark:focus { border-color: var(--gold-primary); outline: none; box-shadow: 0 0 10px rgba(212,175,55,0.2); }
 
-        .btn-gold {
-            background: var(--gold-gradient);
-            color: black;
-            font-weight: 600;
-            transition: 0.2s;
-            border: none;
+        /* User Card (Mobile Optimized) */
+        .user-card {
+            background: #0a0a0a;
+            border: 1px solid #1f1f1f;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
         }
-        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+        .user-card:active { transform: scale(0.98); border-color: var(--gold-primary); }
 
         .btn-action {
-            width: 35px; height: 35px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--gold-primary);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px; padding: 8px 14px;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
             transition: 0.2s;
-            cursor: pointer;
         }
-        .btn-action:hover { transform: scale(1.1); }
+        .btn-action:active { background: var(--gold-primary); color: black; }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+        /* Custom SweetAlert */
+        .swal2-popup { border: 1px solid var(--gold-primary) !important; border-radius: 20px !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-vanta); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        .chart-container { position: relative; height: 200px; width: 100%; }
     </style>
 </head>
-<body class="p-4 md:p-8 min-h-screen flex flex-col">
+<body class="pb-10">
 
-    <div id="loginSection" class="fixed inset-0 bg-black z-50 flex items-center justify-center p-4">
-        <div class="glass-panel p-10 w-full max-w-sm text-center border-t-2 border-t-[#D4AF37]">
-            <div class="w-20 h-20 mx-auto mb-6 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#D4AF37]/10">
-                <i class="fas fa-crown text-3xl text-[#D4AF37]"></i>
-            </div>
-            <h2 class="text-2xl font-light text-white mb-1">TAE<span class="text-gold font-bold">BANK</span></h2>
-            <p class="text-xs text-gray-500 uppercase tracking-widest mb-8">Management Console</p>
+    <div id="loginSection" class="fixed inset-0 bg-[var(--bg-vanta)] z-50 flex items-center justify-center p-6">
+        <div class="glass-box p-8 w-full max-w-sm text-center border-t-2 border-t-[#D4AF37]">
+            <i class="fas fa-fingerprint text-5xl text-[#D4AF37] mb-4 opacity-80"></i>
+            <h2 class="text-2xl font-eng text-white mb-1 tracking-[4px]">MANAGEMENT</h2>
+            <p class="text-xs text-[#666] mb-8 font-num tracking-widest uppercase">Admin Authorization</p>
             
-            <input type="password" id="pass" placeholder="Enter Passcode" class="w-full p-4 rounded-xl input-dark text-center mb-4 tracking-[5px] text-lg">
-            <button onclick="doLogin()" class="w-full btn-gold py-4 rounded-xl shadow-lg">ACCESS SYSTEM</button>
+            <input type="password" id="pass" placeholder="Enter Admin PIN" class="input-dark p-4 rounded-xl text-center text-xl font-num tracking-[10px] mb-6">
+            <button onclick="doLogin()" class="w-full bg-gold py-4 rounded-xl font-bold tracking-wide text-sm">AUTHORIZE ACCESS</button>
         </div>
     </div>
 
-    <div id="mainApp" class="hidden w-full max-w-7xl mx-auto flex-1 flex flex-col">
+    <div id="mainApp" class="hidden w-full max-w-3xl mx-auto p-4 md:p-6 flex flex-col gap-6">
         
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+        <header class="flex justify-between items-center bg-[var(--bg-panel)] p-4 rounded-2xl border border-[var(--border-dark)] shadow-lg">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#8a6e18] flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
-                    <i class="fas fa-university text-black text-2xl"></i>
+                <div class="w-12 h-12 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#D4AF37]/10">
+                    <i class="fas fa-crown text-[#D4AF37] text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-white tracking-wide">จัดการบัญชี</h1>
-                    <p class="text-xs text-[#D4AF37]">Admin: สามเณรจักรภัทร</p>
+                    <h1 class="text-lg font-bold text-white font-eng tracking-wider">TAEBANK <span class="text-[#D4AF37] text-[10px] border border-[#D4AF37] px-1 rounded ml-1">ADMIN</span></h1>
+                    <p class="text-[10px] text-gray-500">พระมหาจักรภัทร คมฺภีรญาณเมธี</p>
                 </div>
             </div>
-            
-            <div class="flex gap-3">
-                <button onclick="openAddModal()" class="btn-gold px-6 py-2.5 rounded-lg text-sm flex items-center gap-2">
-                    <i class="fas fa-user-plus"></i> เพิ่มสมาชิก
-                </button>
-                <label class="cursor-pointer bg-[#1a1a1a] border border-[#333] hover:border-[#D4AF37] text-gray-400 hover:text-white px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 transition">
-                    <i class="fas fa-file-csv"></i> นำเข้าไฟล์
-                    <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(this)">
-                </label>
-                <button onclick="location.reload()" class="bg-red-900/20 border border-red-900/50 text-red-500 px-4 py-2.5 rounded-lg hover:bg-red-900/40 transition">
-                    <i class="fas fa-power-off"></i>
-                </button>
-            </div>
+            <button onclick="location.reload()" class="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20 active:bg-red-500 active:text-white">
+                <i class="fas fa-power-off"></i>
+            </button>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="md:col-span-2 glass-panel p-2 flex items-center">
-                <i class="fas fa-search text-gray-600 ml-4"></i>
-                <input type="text" id="search" oninput="doSearch()" placeholder="ค้นหาชื่อ หรือ เลขบัญชี..." class="w-full bg-transparent border-none text-white p-3 focus:outline-none">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="glass-box p-5 relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl"><i class="fas fa-vault"></i></div>
+                <p class="text-[10px] text-[#D4AF37] font-eng tracking-widest mb-1">Total Assets</p>
+                <h3 id="totalSystemBalance" class="text-2xl font-bold text-white font-num">0.00</h3>
+                <p class="text-[10px] text-gray-500 mt-1">เงินหมุนเวียนทั้งหมด (THB)</p>
             </div>
-            <div class="glass-panel p-4 flex justify-between items-center border border-[#D4AF37]/20 bg-[#D4AF37]/5">
-                <div>
-                    <p class="text-[10px] text-[#D4AF37] uppercase tracking-wider">เงินหมุนเวียนในระบบ</p>
-                    <h3 id="totalSystemBalance" class="text-xl font-bold text-white">0.00 ฿</h3>
-                </div>
-                <i class="fas fa-coins text-[#D4AF37] text-2xl opacity-50"></i>
+            <div class="glass-box p-5 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl"><i class="fas fa-users"></i></div>
+                <p class="text-[10px] text-[#D4AF37] font-eng tracking-widest mb-1">Members</p>
+                <h3 id="totalMembers" class="text-2xl font-bold text-white font-num">0</h3>
+                <p class="text-[10px] text-gray-500 mt-1">บัญชีในระบบทั้งหมด</p>
             </div>
         </div>
 
-        <div class="glass-panel flex-1 overflow-hidden flex flex-col">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="text-xs text-gray-500 uppercase bg-[#0f0f0f] border-b border-[#222]">
-                        <tr>
-                            <th class="p-4 pl-6">เลขบัญชี</th>
-                            <th class="p-4">ชื่อสมาชิก</th>
-                            <th class="p-4 text-right">ยอดคงเหลือ</th>
-                            <th class="p-4 text-center">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="text-sm divide-y divide-[#222]">
-                        </tbody>
-                </table>
+        <div class="glass-box p-4 md:p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-white font-eng tracking-widest"><i class="fas fa-chart-line text-[#D4AF37] mr-2"></i> Cash Flow</h3>
+                <span class="text-[10px] text-gray-500 border border-gray-700 px-2 py-1 rounded">ยอดรวมรายวัน</span>
             </div>
-            <div id="emptyState" class="hidden p-10 text-center text-gray-600">
-                <i class="fas fa-inbox text-4xl mb-2"></i>
-                <p>ไม่พบข้อมูลสมาชิก</p>
+            <div class="chart-container">
+                <canvas id="financeChart"></canvas>
             </div>
         </div>
-        
-        <div class="text-center mt-6 text-gray-600 text-xs">
-            System developed by Novice Monk Jakkapat Atchachak
+
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="window.openAddModal()" class="bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl flex flex-col items-center justify-center gap-2 active:border-[#D4AF37] text-gray-300">
+                <i class="fas fa-user-plus text-xl text-blue-400"></i>
+                <span class="text-xs font-medium">เพิ่มสมาชิกใหม่</span>
+            </button>
+            <label class="bg-[#1a1a1a] border border-[#333] p-4 rounded-2xl flex flex-col items-center justify-center gap-2 active:border-[#D4AF37] text-gray-300 cursor-pointer">
+                <i class="fas fa-file-upload text-xl text-green-400"></i>
+                <span class="text-xs font-medium">นำเข้าไฟล์ CSV</span>
+                <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(this)">
+            </label>
+        </div>
+
+        <div class="glass-box p-4 md:p-6 min-h-[400px]">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 class="text-sm font-bold text-white font-eng tracking-widest"><i class="fas fa-address-book text-[#D4AF37] mr-2"></i> Accounts</h3>
+                <div class="relative w-full sm:w-64">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                    <input type="text" id="search" oninput="doSearch()" placeholder="ค้นหาชื่อ หรือ เลขบัญชี..." class="input-dark pl-10 pr-4 py-2.5 rounded-xl text-sm">
+                </div>
+            </div>
+
+            <div id="tableBody" class="space-y-0">
+                </div>
+            
+            <div id="emptyState" class="hidden p-10 text-center text-gray-600">
+                <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                <p class="text-sm">ไม่พบข้อมูลสมาชิก</p>
+            </div>
         </div>
     </div>
 
@@ -151,6 +180,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
+        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAiCtKW-U5QWp3yUsvToJlh2pT7sjiQ4Iw",
             authDomain: "taebankwat.firebaseapp.com",
@@ -163,23 +193,26 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let membersData = [];
         let txData = [];
+        let myChart = null; // ตัวแปรกราฟ
         
-        // RENAME PASSWORD HERE
+        // รหัสแอดมิน
         const ADMIN_PASS = "2598";
 
         // Login Logic
         window.doLogin = () => {
             const input = document.getElementById('pass').value;
             if(input === ADMIN_PASS) {
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                initData();
+                document.getElementById('loginSection').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    initData();
+                }, 500);
             } else {
-                Swal.fire({
-                    icon: 'error', title: 'รหัสผิด!', background: '#111', color: '#fff', confirmButtonColor: '#D4AF37'
-                });
+                Swal.fire({ icon: 'error', title: 'ACCESS DENIED', background: '#111', color: '#fff', confirmButtonColor: '#D4AF37' });
             }
         };
 
@@ -189,21 +222,62 @@
                 onValue(ref(db, 'transactions'), (tSnap) => {
                     txData = tSnap.val() ? Object.values(tSnap.val()) : [];
                     render();
+                    updateChart(); // อัปเดตกราฟ
                 });
             });
         }
 
+        // --- DRAW CHART LOGIC ---
+        function updateChart() {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            
+            // ประมวลผลข้อมูลกราฟ (สมมติจัดกลุ่มตามวันที่ 7 วันล่าสุด)
+            const dates = {};
+            txData.forEach(t => {
+                const dateStr = new Date(t.date).toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+                if(!dates[dateStr]) dates[dateStr] = { dep: 0, wit: 0 };
+                if(t.type === 'deposit') dates[dateStr].dep += parseFloat(t.amount);
+                else dates[dateStr].wit += parseFloat(t.amount);
+            });
+
+            // ดึง 5 วันล่าสุดมาแสดง
+            const labels = Object.keys(dates).slice(-5);
+            const depData = labels.map(l => dates[l].dep);
+            const witData = labels.map(l => dates[l].wit);
+
+            if(myChart) myChart.destroy(); // ลบกราฟเก่าก่อนวาดใหม่
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length ? labels : ['ไม่มีข้อมูล'],
+                    datasets: [
+                        { label: 'ยอดฝาก', data: depData, backgroundColor: '#10B981', borderRadius: 4 },
+                        { label: 'ยอดถอน', data: witData, backgroundColor: '#EF4444', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { color: '#888', font: {family: 'Space Grotesk'} }, grid: { color: '#222' } },
+                        x: { ticks: { color: '#888', font: {family: 'Sarabun'} }, grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- RENDER MEMBER LIST (Mobile Cards) ---
         function render(data = membersData) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
             let totalSys = 0;
+            document.getElementById('totalMembers').innerText = membersData.length;
 
-            if(data.length === 0) {
-                document.getElementById('emptyState').classList.remove('hidden');
-            } else {
-                document.getElementById('emptyState').classList.add('hidden');
-            }
+            if(data.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+            else document.getElementById('emptyState').classList.add('hidden');
 
             data.sort((a,b) => a.code - b.code).forEach(m => {
                 let bal = 0;
@@ -212,94 +286,65 @@
                 });
                 totalSys += bal;
 
+                // สร้าง Card รายบุคคล
                 tbody.innerHTML += `
-                    <tr class="hover:bg-[#1a1a1a] transition group">
-                        <td class="p-4 pl-6 font-mono text-[#D4AF37] font-bold tracking-wider">${m.code}</td>
-                        <td class="p-4">
-                            <div class="font-bold text-white text-base">${m.nick}</div>
-                            <div class="text-xs text-gray-500">${m.name}</div>
-                        </td>
-                        <td class="p-4 text-right">
-                            <span class="font-bold text-lg ${bal>=0?'text-green-400':'text-red-400'}">${bal.toLocaleString()}</span>
-                            <span class="text-xs text-gray-600">THB</span>
-                        </td>
-                        <td class="p-4">
-                            <div class="flex items-center justify-center gap-2">
-                                <button onclick="window.openTxModal('${m.code}', '${m.nick}')" class="btn-action bg-green-900/30 text-green-500 border border-green-500/30 hover:bg-green-500 hover:text-white" title="ฝาก/ถอน">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </button>
-                                <button onclick="window.openEditModal('${m.code}', '${m.nick}', '${m.name}')" class="btn-action bg-blue-900/30 text-blue-500 border border-blue-500/30 hover:bg-blue-500 hover:text-white" title="แก้ไข">
-                                    <i class="fas fa-pen"></i>
-                                </button>
-                                <button onclick="window.del('${m.code}')" class="btn-action bg-red-900/30 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white opacity-50 hover:opacity-100 group-hover:opacity-100 transition" title="ลบ">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                    <div class="user-card">
+                        <div class="flex-1">
+                            <div class="flex items-baseline gap-2 mb-1">
+                                <span class="font-num text-[11px] text-[#D4AF37] tracking-[2px] bg-[#D4AF37]/10 px-1.5 py-0.5 rounded">${m.code}</span>
                             </div>
-                        </td>
-                    </tr>
+                            <h4 class="font-bold text-[15px] text-white leading-tight">${m.nick}</h4>
+                            <p class="text-[10px] text-gray-500 truncate w-40">${m.name}</p>
+                            <div class="mt-2 text-lg font-num font-bold ${bal >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ฿${bal.toLocaleString()}
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <button onclick="window.openTxModal('${m.code}', '${m.nick}')" class="btn-action justify-center">
+                                <i class="fas fa-bolt"></i> ทำรายการ
+                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="window.openEditModal('${m.code}', '${m.nick}', '${m.name}')" class="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg py-1.5 text-blue-400 hover:bg-blue-500 hover:text-white transition"><i class="fas fa-pen text-[10px]"></i></button>
+                                <button onclick="window.del('${m.code}')" class="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg py-1.5 text-red-500 hover:bg-red-500 hover:text-white transition"><i class="fas fa-trash text-[10px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
                 `;
             });
-            document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2}) + ' ฿';
+            document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2});
         }
 
-        // --- ACTIONS ---
+        // --- ACTIONS (EASY TRANSACT) ---
 
-        // 1. Add New User Modal
-        window.openAddModal = async () => {
-            const { value: formValues } = await Swal.fire({
-                title: 'เพิ่มสมาชิกใหม่',
-                background: '#111', color: '#fff',
-                html: `
-                    <input id="swal-code" class="swal2-input input-dark" placeholder="เลขบัญชี 6 หลัก">
-                    <input id="swal-nick" class="swal2-input input-dark" placeholder="ชื่อเล่น (ฉายา)">
-                    <input id="swal-name" class="swal2-input input-dark" placeholder="ชื่อจริง-นามสกุล">
-                `,
-                confirmButtonText: 'บันทึก', confirmButtonColor: '#D4AF37',
-                focusConfirm: false,
-                preConfirm: () => {
-                    return [
-                        document.getElementById('swal-code').value,
-                        document.getElementById('swal-nick').value,
-                        document.getElementById('swal-name').value
-                    ]
-                }
-            });
-
-            if (formValues && formValues[0]) {
-                const [code, nick, name] = formValues;
-                await set(ref(db, 'members/' + code), { code, nick, name });
-                Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', timer: 1000, showConfirmButton: false, background:'#111', color:'#fff' });
-            }
-        };
-
-        // 2. Deposit/Withdraw Modal (FIXED LOGIC)
+        // 1. Easy Deposit/Withdraw Modal
         window.openTxModal = async (code, nick) => {
-            // Step 1: Choose Type
+            // สไตล์ปุ่มแบบหรูหรา
             const result = await Swal.fire({
-                title: `ทำรายการ: ${nick}`,
-                text: 'เลือกประเภทรายการ',
+                title: `<span style="font-family:'Sarabun'; color:#D4AF37; font-size:1.2rem;">ทำรายการ: ${nick}</span>`,
+                text: 'กรุณาเลือกประเภทที่ต้องการ',
                 background: '#111', color: '#fff',
-                showDenyButton: true,
-                showCancelButton: true,
-                confirmButtonText: 'ฝากเงิน (+)', confirmButtonColor: '#10B981',
-                denyButtonText: 'ถอนเงิน (-)', denyButtonColor: '#EF4444',
-                cancelButtonText: 'ยกเลิก'
+                showDenyButton: true, showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-arrow-down"></i> ฝากเงินเข้า',
+                confirmButtonColor: '#059669',
+                denyButtonText: '<i class="fas fa-arrow-up"></i> ถอนเงินออก',
+                denyButtonColor: '#DC2626',
+                cancelButtonText: 'ยกเลิก',
+                customClass: { actions: 'flex flex-col gap-2 w-full px-6', confirmButton: 'w-full', denyButton: 'w-full m-0', cancelButton: 'w-full m-0 bg-transparent text-gray-500' }
             });
 
             if (result.isConfirmed || result.isDenied) {
                 const isDeposit = result.isConfirmed;
-                const actionText = isDeposit ? 'ฝากเงิน' : 'ถอนเงิน';
+                const actionText = isDeposit ? 'ฝากเงินเข้าบัญชี' : 'ถอนเงินออกจากบัญชี';
                 
-                // Step 2: Enter Amount
                 const { value: amount } = await Swal.fire({
-                    title: `ระบุจำนวนเงิน${actionText}`,
+                    title: `<span style="font-family:'Sarabun'; font-size:1.2rem;">ระบุจำนวนเงิน${isDeposit?'ฝาก':'ถอน'}</span>`,
                     input: 'number',
-                    inputAttributes: { min: 1 },
+                    inputAttributes: { min: 1, placeholder: '0.00' },
                     background: '#111', color: '#fff',
-                    confirmButtonText: 'ยืนยัน', confirmButtonColor: '#D4AF37',
-                    inputValidator: (value) => {
-                        if (!value || value <= 0) return 'กรุณาใส่จำนวนเงินที่ถูกต้อง!'
-                    }
+                    confirmButtonText: 'ยืนยันรายการ', confirmButtonColor: '#D4AF37',
+                    customClass: { input: 'text-center font-num text-2xl text-[#D4AF37]' },
+                    inputValidator: (value) => { if (!value || value <= 0) return 'กรุณาใส่จำนวนเงินที่ถูกต้อง!' }
                 });
 
                 if (amount) {
@@ -309,58 +354,60 @@
                         amount: amount,
                         date: new Date().toISOString()
                     });
-                    
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: 'บันทึกสำเร็จ', 
-                        text: `${actionText} ${parseFloat(amount).toLocaleString()} บาท`,
-                        timer: 1500, showConfirmButton: false, background:'#111', color:'#fff' 
-                    });
+                    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#111', color:'#D4AF37' });
                 }
             }
         };
 
-        // 3. Edit User Modal
+        // 2. Add Member
+        window.openAddModal = async () => {
+            const { value: formValues } = await Swal.fire({
+                title: '<span style="font-family:\'Sarabun\'">เพิ่มบัญชีใหม่</span>',
+                background: '#111', color: '#fff',
+                html: `
+                    <input id="swal-code" class="swal2-input bg-[#0a0a0a] border-[#333] text-white font-num tracking-widest text-center" placeholder="เลขบัญชี 6 หลัก">
+                    <input id="swal-nick" class="swal2-input bg-[#0a0a0a] border-[#333] text-white text-center" placeholder="ชื่อเล่น (ฉายา)">
+                    <input id="swal-name" class="swal2-input bg-[#0a0a0a] border-[#333] text-white text-center text-sm" placeholder="ชื่อจริง-นามสกุล">
+                `,
+                confirmButtonText: 'สร้างบัญชี', confirmButtonColor: '#D4AF37',
+                preConfirm: () => [ document.getElementById('swal-code').value, document.getElementById('swal-nick').value, document.getElementById('swal-name').value ]
+            });
+
+            if (formValues && formValues[0]) {
+                const [code, nick, name] = formValues;
+                await set(ref(db, 'members/' + code), { code, nick, name });
+                Swal.fire({ icon: 'success', title: 'เพิ่มบัญชีแล้ว', timer: 1000, showConfirmButton: false, background:'#111', color:'#D4AF37' });
+            }
+        };
+
+        // 3. Edit Member
         window.openEditModal = async (code, oldNick, oldName) => {
             const { value: formValues } = await Swal.fire({
                 title: 'แก้ไขข้อมูล',
                 background: '#111', color: '#fff',
                 html: `
-                    <label class="text-xs text-gray-500">ชื่อเล่น</label>
-                    <input id="edit-nick" class="swal2-input input-dark" value="${oldNick}">
-                    <label class="text-xs text-gray-500">ชื่อจริง</label>
-                    <input id="edit-name" class="swal2-input input-dark" value="${oldName}">
+                    <input id="edit-nick" class="swal2-input bg-[#0a0a0a] border-[#333] text-white" value="${oldNick}">
+                    <input id="edit-name" class="swal2-input bg-[#0a0a0a] border-[#333] text-white text-sm" value="${oldName}">
                 `,
                 confirmButtonText: 'อัปเดต', confirmButtonColor: '#3B82F6',
-                preConfirm: () => {
-                    return [
-                        document.getElementById('edit-nick').value,
-                        document.getElementById('edit-name').value
-                    ]
-                }
+                preConfirm: () => [ document.getElementById('edit-nick').value, document.getElementById('edit-name').value ]
             });
 
             if (formValues) {
-                const [newNick, newName] = formValues;
-                await set(ref(db, 'members/' + code), { code, nick: newNick, name: newName });
-                Swal.fire({ icon: 'success', title: 'อัปเดตแล้ว', timer: 1000, showConfirmButton: false, background:'#111', color:'#fff' });
+                await set(ref(db, 'members/' + code), { code, nick: formValues[0], name: formValues[1] });
+                Swal.fire({ icon: 'success', title: 'อัปเดตแล้ว', timer: 1000, showConfirmButton: false, background:'#111' });
             }
         };
 
         // 4. Delete
         window.del = (code) => {
             Swal.fire({
-                title: 'ลบบัญชีนี้?',
-                text: "ข้อมูลเงินและการทำรายการจะหายทั้งหมด!",
-                icon: 'warning',
-                background: '#111', color: '#fff',
-                showCancelButton: true,
-                confirmButtonColor: '#EF4444',
-                confirmButtonText: 'ลบเลย'
+                title: 'ยืนยันลบบัญชี?', text: "ข้อมูลเงินฝาก-ถอนจะถูกลบทั้งหมด", icon: 'warning',
+                background: '#111', color: '#fff', showCancelButton: true, confirmButtonColor: '#EF4444', confirmButtonText: 'ลบทิ้ง'
             }).then((result) => {
                 if (result.isConfirmed) {
                     remove(ref(db, 'members/' + code));
-                    Swal.fire({title:'ลบแล้ว', icon:'success', timer:1000, showConfirmButton:false, background:'#111', color:'#fff'});
+                    Swal.fire({title:'ลบแล้ว', icon:'success', timer:1000, showConfirmButton:false, background:'#111'});
                 }
             });
         };
@@ -376,22 +423,14 @@
                     for (const row of results.data) {
                         if (row.เลขที่บัญชี) {
                             const code = row.เลขที่บัญชี.trim();
-                            await set(ref(db, 'members/' + code), {
-                                code: code,
-                                nick: row['นมัสการ สามเณร..'] || '',
-                                name: row.ชื่อจริง || ''
-                            });
+                            await set(ref(db, 'members/' + code), { code, nick: row['นมัสการ สามเณร..'] || '', name: row.ชื่อจริง || '' });
                             if (row.ยอดคงเหลือ) {
-                                await push(ref(db, 'transactions'), {
-                                    studentCode: code, type: 'deposit',
-                                    amount: parseFloat(row.ยอดคงเหลือ.replace(/,/g, '')),
-                                    date: new Date().toISOString()
-                                });
+                                await push(ref(db, 'transactions'), { studentCode: code, type: 'deposit', amount: parseFloat(row.ยอดคงเหลือ.replace(/,/g, '')), date: new Date().toISOString() });
                             }
                             count++;
                         }
                     }
-                    Swal.fire({ title: 'นำเข้าสำเร็จ', text: `เพิ่มข้อมูล ${count} รายการ`, icon: 'success', background: '#111', color: '#fff', confirmButtonColor: '#D4AF37' });
+                    Swal.fire({ title: 'นำเข้าสำเร็จ', text: `เพิ่มข้อมูล ${count} รายการ`, icon: 'success', background: '#111', color: '#D4AF37', confirmButtonColor: '#D4AF37' });
                 }
             });
         };
