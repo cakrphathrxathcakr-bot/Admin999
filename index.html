@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TaeBank - Wealth Manager Console</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Sarabun:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Sarabun:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -81,13 +81,9 @@
 
         /* Tool Buttons */
         .btn-tool {
-            background: #F9FAFB;
-            border: 1px solid #E5E7EB;
-            border-radius: 10px;
-            padding: 8px 0;
+            background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px; padding: 8px 0;
             display: flex; flex-direction: column; align-items: center; gap: 4px;
-            transition: 0.2s;
-            font-size: 10px; font-weight: 500;
+            transition: 0.2s; font-size: 10px; font-weight: 500;
         }
         .btn-tool-history { color: #4B5563; }
         .btn-tool-history:active { background: #E5E7EB; }
@@ -98,9 +94,8 @@
 
         /* SweetAlert Custom */
         .swal2-popup { border-radius: 24px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important; border: 1px solid var(--border-light) !important; }
-        .swal2-html-container { margin: 0.5em 1em 0.3em !important; } /* Fix spacing in custom history modal */
+        .swal2-html-container { margin: 0.5em 1em 0.3em !important; }
 
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
@@ -186,8 +181,7 @@
                 </div>
             </div>
 
-            <div id="tableBody" class="space-y-0">
-                </div>
+            <div id="tableBody" class="space-y-0"></div>
             
             <div id="emptyState" class="hidden py-12 text-center text-[var(--text-muted)]">
                 <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-100">
@@ -199,8 +193,9 @@
     </div>
 
     <script type="module">
+        // เพิ่ม update เข้ามา เพื่อใช้แก้ไขข้อมูลทับบัญชีเดิม
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+        import { getDatabase, ref, push, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAiCtKW-U5QWp3yUsvToJlh2pT7sjiQ4Iw",
@@ -237,9 +232,14 @@
 
         function initData() {
             onValue(ref(db, 'members'), (snap) => {
-                membersData = snap.val() ? Object.values(snap.val()) : [];
+                const data = snap.val() || {};
+                // จับ dbKey (รหัสจริงในฐานข้อมูล) มาเก็บไว้ด้วย ป้องกันปัญหาลบไม่ได้
+                membersData = Object.keys(data).map(key => ({
+                    dbKey: key, 
+                    ...data[key]
+                }));
+
                 onValue(ref(db, 'transactions'), (tSnap) => {
-                    // เก็บคีย์ของรายการด้วย เพื่อใช้เวลาสั่งลบ
                     const txObj = tSnap.val() || {};
                     txData = Object.keys(txObj).map(key => ({
                         id: key,
@@ -258,19 +258,24 @@
             let memberBalances = [];
             membersData.forEach(m => {
                 let bal = 0;
-                txData.filter(t => t.studentCode === m.code).forEach(t => {
+                // อิงจาก dbKey และ code กรณีที่มันเคยถูกสร้างผิดเพี้ยนไว้
+                txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
-                if(bal > 0) memberBalances.push({ name: m.nick || m.name, balance: bal });
+                if(bal > 0) {
+                    memberBalances.push({ name: m.nick || m.name, balance: bal });
+                }
             });
 
             memberBalances.sort((a,b) => b.balance - a.balance);
+
             const labels = memberBalances.map(m => m.name);
             const data = memberBalances.map(m => m.balance);
 
             const bgColors = [ '#C49A45', '#94A3B8', '#A0522D', '#2E8B57', '#4169E1', '#9966CC', '#E87A5D', '#4B5563', '#00CED1', '#F472B6', '#8B5CF6', '#10B981', '#F59E0B', '#6366F1', '#14B8A6' ];
 
             if(myChart) myChart.destroy();
+
             if(data.length === 0) {
                 labels.push('ยังไม่มียอดเงิน');
                 data.push(1);
@@ -319,18 +324,19 @@
 
             data.sort((a,b) => a.code - b.code).forEach(m => {
                 let bal = 0;
-                txData.filter(t => t.studentCode === m.code).forEach(t => {
+                txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
                 totalSys += bal;
-                const safeCode = String(m.code).replace(/[^a-zA-Z0-9]/g, '');
 
-                // UI บัญชี แบ่ง 3 ปุ่มด้านล่าง (ประวัติ, แก้ไข, ลบ)
+                // ใช้ m.dbKey เสมอ ในการจัดการฐานข้อมูล
+                const safeKey = m.dbKey.replace(/'/g, "\\'"); 
+
                 tbody.innerHTML += `
                     <div class="user-card">
                         <div class="flex-1 pr-2">
                             <div class="flex items-baseline gap-2 mb-1">
-                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${safeCode}</span>
+                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${m.code}</span>
                             </div>
                             <h4 class="font-bold text-[16px] text-[var(--text-main)] leading-tight mt-1">${m.nick}</h4>
                             <p class="text-[11px] text-[var(--text-muted)] truncate w-32">${m.name}</p>
@@ -340,17 +346,17 @@
                         </div>
                         
                         <div class="flex flex-col gap-2.5 w-36">
-                            <button onclick="window.openTxModal('${safeCode}', '${m.nick}')" class="btn-action justify-center shadow-sm">
+                            <button onclick="window.openTxModal('${safeKey}', '${m.nick}')" class="btn-action justify-center shadow-sm">
                                 <i class="fas fa-bolt text-[#C49A45]"></i> ทำรายการ
                             </button>
                             <div class="grid grid-cols-3 gap-1.5">
-                                <button onclick="window.openHistoryModal('${safeCode}', '${m.nick}')" class="btn-tool btn-tool-history" title="ดูประวัติ/ลบรายการ">
+                                <button onclick="window.openHistoryModal('${safeKey}', '${m.nick}')" class="btn-tool btn-tool-history" title="ดูประวัติ/ลบรายการ">
                                     <i class="fas fa-history text-sm"></i>
                                 </button>
-                                <button onclick="window.openEditModal('${safeCode}', '${m.nick}', '${m.name}')" class="btn-tool btn-tool-edit" title="แก้ไขชื่อ">
+                                <button onclick="window.openEditModal('${safeKey}', '${m.nick}', '${m.name}')" class="btn-tool btn-tool-edit" title="แก้ไขชื่อ">
                                     <i class="fas fa-pen text-[13px]"></i>
                                 </button>
-                                <button onclick="window.del('${safeCode}')" class="btn-tool btn-tool-del" title="ลบบัญชี">
+                                <button onclick="window.del('${safeKey}')" class="btn-tool btn-tool-del" title="ลบบัญชี">
                                     <i class="fas fa-trash text-[13px]"></i>
                                 </button>
                             </div>
@@ -362,16 +368,14 @@
         }
 
         // --- ACTIONS ---
-        window.openTxModal = async (code, nick) => {
+        window.openTxModal = async (dbKey, nick) => {
             const result = await Swal.fire({
                 title: `<span style="font-family:'Sarabun'; color:#C49A45; font-size:1.3rem; font-weight:bold;">ทำรายการ: ${nick}</span>`,
                 text: 'เลือกประเภทรายการที่ต้องการ',
                 background: '#fff', color: '#2C303A',
                 showDenyButton: true, showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-arrow-down"></i> ฝากเงินเข้า',
-                confirmButtonColor: '#10B981',
-                denyButtonText: '<i class="fas fa-arrow-up"></i> ถอนเงินออก',
-                denyButtonColor: '#EF4444',
+                confirmButtonText: '<i class="fas fa-arrow-down"></i> ฝากเงินเข้า', confirmButtonColor: '#10B981',
+                denyButtonText: '<i class="fas fa-arrow-up"></i> ถอนเงินออก', denyButtonColor: '#EF4444',
                 cancelButtonText: 'ยกเลิก', cancelButtonColor: '#F3F4F6',
                 customClass: { actions: 'flex flex-col gap-3 w-full px-6', confirmButton: 'w-full shadow-sm', denyButton: 'w-full m-0 shadow-sm', cancelButton: 'w-full m-0 text-gray-500 font-semibold border border-gray-200' }
             });
@@ -380,8 +384,7 @@
                 const isDeposit = result.isConfirmed;
                 const { value: amount } = await Swal.fire({
                     title: `<span style="font-family:'Sarabun'; font-size:1.2rem; font-weight:bold;">ระบุจำนวนเงิน${isDeposit?'ฝาก':'ถอน'}</span>`,
-                    input: 'number',
-                    inputAttributes: { min: 1, placeholder: '0.00' },
+                    input: 'number', inputAttributes: { min: 1, placeholder: '0.00' },
                     background: '#fff', color: '#2C303A',
                     confirmButtonText: 'ยืนยันรายการ', confirmButtonColor: '#C49A45',
                     customClass: { input: 'text-center font-num text-3xl text-[#C49A45] bg-gray-50 border-gray-200 font-semibold' },
@@ -390,7 +393,7 @@
 
                 if (amount) {
                     await push(ref(db, 'transactions'), {
-                        studentCode: code, type: isDeposit ? 'deposit' : 'withdraw',
+                        studentCode: dbKey, type: isDeposit ? 'deposit' : 'withdraw',
                         amount: amount, date: new Date().toISOString()
                     });
                     Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#fff', color:'#2C303A' });
@@ -398,10 +401,11 @@
             }
         };
 
-        // 📝 หน้าต่างดูประวัติและลบรายการ (ใหม่)
-        window.openHistoryModal = (code, nick) => {
-            let userTxs = txData.filter(t => t.studentCode === code);
-            userTxs.sort((a,b) => new Date(b.date) - new Date(a.date)); // ใหม่สุดขึ้นก่อน
+        // ประวัติและการลบรายการเฉพาะบุคคล
+        window.openHistoryModal = (dbKey, nick) => {
+            const targetMember = membersData.find(m => m.dbKey === dbKey);
+            let userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
+            userTxs.sort((a,b) => new Date(b.date) - new Date(a.date));
 
             let html = `<div class="max-h-72 overflow-y-auto pr-1 space-y-2 mt-2">`;
             
@@ -421,7 +425,7 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="text-base font-bold font-num ${isDep ? 'text-green-600' : 'text-red-500'}">${isDep ? '+' : '-'}${parseFloat(t.amount).toLocaleString()}</span>
-                                <button onclick="deleteTx('${t.id}', '${code}', '${nick}')" class="w-7 h-7 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition border border-red-200 shadow-sm" title="ลบรายการนี้">
+                                <button onclick="deleteTx('${t.id}', '${dbKey}', '${nick}')" class="w-7 h-7 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition border border-red-200 shadow-sm" title="ลบรายการนี้">
                                     <i class="fas fa-times text-[10px]"></i>
                                 </button>
                             </div>
@@ -433,30 +437,63 @@
 
             Swal.fire({
                 title: `<span style="font-family:'Sarabun'; font-weight:bold; font-size:1.2rem; color:#4B5563;"><i class="fas fa-list-alt text-gray-400 mr-1"></i> ประวัติ: ${nick}</span>`,
-                html: html,
-                background: '#fff',
-                showConfirmButton: false,
-                showCloseButton: true,
+                html: html, background: '#fff', showConfirmButton: false, showCloseButton: true,
             });
         };
 
-        // 🗑️ ฟังก์ชันลบรายการย้อนหลัง
-        window.deleteTx = (txId, code, nick) => {
+        window.deleteTx = (txId, dbKey, nick) => {
             Swal.fire({
-                title: '<span style="font-family:\'Sarabun\'">ลบรายการนี้?</span>',
-                text: "ยอดเงินจะถูกคำนวณหักลบใหม่ทันที",
+                title: '<span style="font-family:\'Sarabun\'">ลบรายการนี้?</span>', text: "ยอดเงินจะถูกคำนวณใหม่ทันที",
                 icon: 'warning', background: '#fff',
                 showCancelButton: true, confirmButtonColor: '#EF4444', cancelButtonColor: '#E5E7EB',
-                confirmButtonText: 'ลบรายการ', cancelButtonText: 'ยกเลิก',
-                customClass: { cancelButton: 'text-gray-700 font-semibold' }
+                confirmButtonText: 'ลบรายการ', cancelButtonText: 'ยกเลิก', customClass: { cancelButton: 'text-gray-700 font-semibold' }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     await remove(ref(db, 'transactions/' + txId));
-                    // รอฐานข้อมูลลบเสร็จ แล้วเปิดหน้าต่างประวัติใหม่เพื่ออัปเดต
-                    setTimeout(() => { window.openHistoryModal(code, nick); }, 300);
+                    setTimeout(() => { window.openHistoryModal(dbKey, nick); }, 300);
                 } else {
-                    // ถ้ากดยกเลิก ให้กลับไปหน้าประวัติเหมือนเดิม
-                    window.openHistoryModal(code, nick);
+                    window.openHistoryModal(dbKey, nick);
+                }
+            });
+        };
+
+        // 📝 แก้ไขชื่อทับบัญชีเดิม 100%
+        window.openEditModal = async (dbKey, oldNick, oldName) => {
+            const { value: formValues } = await Swal.fire({
+                title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">แก้ไขข้อมูล</span>', background: '#fff', color: '#2C303A',
+                html: `
+                    <input id="edit-nick" class="swal2-input input-light" value="${oldNick}">
+                    <input id="edit-name" class="swal2-input input-light text-sm" value="${oldName}">
+                `,
+                confirmButtonText: 'บันทึกทับข้อมูลเดิม', confirmButtonColor: '#3B82F6',
+                preConfirm: () => [ document.getElementById('edit-nick').value, document.getElementById('edit-name').value ]
+            });
+
+            if (formValues) {
+                // ใช้คำสั่ง update() แทน set() เพื่อรักษาโครงสร้างเดิมและไม่สร้าง key ใหม่
+                await update(ref(db, 'members/' + dbKey), { 
+                    nick: formValues[0], 
+                    name: formValues[1] 
+                });
+                Swal.fire({ icon: 'success', title: 'อัปเดตทับบัญชีเดิมแล้ว', timer: 1500, showConfirmButton: false, background:'#fff' });
+            }
+        };
+
+        // 🗑️ ลบบัญชีได้ชัวร์ 100%
+        window.del = (dbKey) => {
+            Swal.fire({
+                title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">ยืนยันการลบบัญชี?</span>', text: "ข้อมูลเงินฝากและประวัติทั้งหมดจะหายไปถาวร", 
+                icon: 'warning', background: '#fff', color: '#2C303A', 
+                showCancelButton: true, confirmButtonColor: '#EF4444', confirmButtonText: 'ลบทิ้งถาวร',
+                cancelButtonText: 'ยกเลิก', cancelButtonColor: '#E5E7EB', customClass: { cancelButton: 'text-gray-700 font-semibold' }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const targetMember = membersData.find(m => m.dbKey === dbKey);
+                    await remove(ref(db, 'members/' + dbKey)); // ลบฐานข้อมูลตรง key เป๊ะๆ
+
+                    const userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
+                    for(let t of userTxs) await remove(ref(db, 'transactions/' + t.id));
+                    Swal.fire({title:'ลบเรียบร้อย', icon:'success', timer:1000, showConfirmButton:false});
                 }
             });
         };
@@ -483,40 +520,6 @@
             }
         };
 
-        window.openEditModal = async (code, oldNick, oldName) => {
-            const { value: formValues } = await Swal.fire({
-                title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">แก้ไขข้อมูล</span>', background: '#fff', color: '#2C303A',
-                html: `
-                    <input id="edit-nick" class="swal2-input input-light" value="${oldNick}">
-                    <input id="edit-name" class="swal2-input input-light text-sm" value="${oldName}">
-                `,
-                confirmButtonText: 'อัปเดต', confirmButtonColor: '#3B82F6',
-                preConfirm: () => [ document.getElementById('edit-nick').value, document.getElementById('edit-name').value ]
-            });
-
-            if (formValues) {
-                await set(ref(db, 'members/' + code), { code, nick: formValues[0], name: formValues[1] });
-                Swal.fire({ icon: 'success', title: 'อัปเดตแล้ว', timer: 1000, showConfirmButton: false });
-            }
-        };
-
-        window.del = (code) => {
-            const cleanCode = String(code).trim();
-            Swal.fire({
-                title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">ยืนยันการลบบัญชี?</span>', text: "ข้อมูลเงินฝากและประวัติทั้งหมดจะหายไป", 
-                icon: 'warning', background: '#fff', color: '#2C303A', 
-                showCancelButton: true, confirmButtonColor: '#EF4444', confirmButtonText: 'ลบทิ้งถาวร',
-                cancelButtonText: 'ยกเลิก', cancelButtonColor: '#E5E7EB', customClass: { cancelButton: 'text-gray-700 font-semibold' }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    await remove(ref(db, 'members/' + cleanCode));
-                    const userTxs = txData.filter(t => t.studentCode === cleanCode);
-                    for(let t of userTxs) await remove(ref(db, 'transactions/' + t.id));
-                    Swal.fire({title:'ลบเรียบร้อย', icon:'success', timer:1000, showConfirmButton:false});
-                }
-            });
-        };
-
         window.importCSV = (input) => {
             const file = input.files[0];
             if (!file) return;
@@ -526,7 +529,8 @@
                     let count = 0;
                     for (const row of results.data) {
                         if (row.เลขที่บัญชี) {
-                            const code = row.เลขที่บัญชี.toString().trim().replace(/[^a-zA-Z0-9]/g, '');
+                            // ล้างอักขระแปลกปลอมออกให้หมดก่อนเอาเข้าฐานข้อมูล
+                            const code = row.เลขที่บัญชี.toString().replace(/[\s\uFEFF\xA0]/g, '').replace(/[^a-zA-Z0-9]/g, '');
                             if(!code) continue;
                             await set(ref(db, 'members/' + code), { code: code, nick: row['นมัสการ สามเณร..'] || '', name: row.ชื่อจริง || '' });
                             if (row.ยอดคงเหลือ) await push(ref(db, 'transactions'), { studentCode: code, type: 'deposit', amount: parseFloat(row.ยอดคงเหลือ.replace(/,/g, '')), date: new Date().toISOString() });
