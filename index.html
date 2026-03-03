@@ -205,111 +205,6 @@
         };
         let chartInstance = null;
 
-        // --- 1. AUTHENTICATION (แก้ปัญหาเด้งออก) ---
-        const adminPass = "2598";
-        
-        function handleLogin() {
-            const pin = document.getElementById('adminPin').value;
-            if (pin === adminPass) {
-                document.getElementById('view-login').classList.add('hidden-safely');
-                document.getElementById('view-main').classList.remove('hidden-safely');
-                fetchDatabase(); // โหลดข้อมูลครั้งเดียว
-            } else {
-                Swal.fire({ icon: 'error', title: 'รหัสไม่ถูกต้อง', confirmButtonColor: '#C49A45' });
-            }
-        }
-
-        // ดักปุ่มคลิก และ ดักปุ่ม Enter ในคีย์บอร์ด
-        document.getElementById('btnLogin').addEventListener('click', handleLogin);
-        document.getElementById('adminPin').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleLogin();
-        });
-        document.getElementById('btnLogout').addEventListener('click', () => location.reload());
-
-        // --- 2. FETCH DATABASE (ดึงข้อมูลแบบฉลาด) ---
-        function fetchDatabase() {
-            onValue(ref(db, 'members'), (snapshot) => {
-                DB_STATE.members = snapshot.val() || {};
-                renderDashboard();
-            });
-
-            onValue(ref(db, 'transactions'), (snapshot) => {
-                DB_STATE.transactions = snapshot.val() || {};
-                renderDashboard();
-            });
-        }
-
-        // --- 3. RENDER ENGINE (วาดหน้าจอ) ---
-        function renderDashboard() {
-            const searchKeyword = document.getElementById('searchInput').value.toLowerCase().trim();
-            const listContainer = document.getElementById('listContainer');
-            const emptyState = document.getElementById('emptyState');
-            
-            let totalBankAssets = 0;
-            let totalMembers = 0;
-            let chartData = [];
-            listContainer.innerHTML = '';
-
-            // วนลูปข้อมูลสมาชิกทั้งหมด
-            const memberKeys = Object.keys(DB_STATE.members);
-            
-            // เรียงรหัสจากน้อยไปมาก
-            memberKeys.sort((a, b) => parseInt(a) - parseInt(b)).forEach(dbKey => {
-                const member = DB_STATE.members[dbKey];
-                const safeName = (member.name || '').toLowerCase();
-                const safeNick = (member.nick || '').toLowerCase();
-                
-                // ค้นหา
-                if (searchKeyword && !dbKey.includes(searchKeyword) && !safeName.includes(searchKeyword) && !safeNick.includes(searchKeyword)) {
-                    return; // ข้ามคนที่ไม่ตรงเงื่อนไข
-                }
-
-                totalMembers++;
-
-                // คำนวณเงินของคนนี้
-                let memberBalance = 0;
-                Object.keys(DB_STATE.transactions).forEach(txId => {
-                    const tx = DB_STATE.transactions[txId];
-                    if (tx.studentCode === dbKey) {
-                        memberBalance += (tx.type === 'deposit' ? parseFloat(tx.amount) : -parseFloat(tx.amount));
-                    }
-                });
-
-                totalBankAssets += memberBalance;
-                if (memberBalance > 0) {
-                    chartData.push({ name: member.nick || dbKey, bal: memberBalance });
-                }
-
-                // สร้างการ์ด (ใช้ DOM ซ่อนตัวแปร เพื่อป้องกันบัคเครื่องหมายคำพูด ' " ขัดแย้งกัน)
-                const card = document.createElement('div');
-                card.className = 'member-card';
-                card.innerHTML = `
-                    <div class="flex-1 pr-2 overflow-hidden">
-                        <div class="flex items-baseline gap-2 mb-1">
-                            <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${dbKey}</span>
-                        </div>
-                        <h4 class="font-bold text-base text-[var(--text-dark)] leading-tight mt-1 truncate">${member.nick || '-'}</h4>
-                        <p class="text-[11px] text-[var(--text-light)] truncate w-full">${member.name || '-'}</p>
-                        <div class="mt-2.5 text-[22px] font-num font-semibold ${memberBalance >= 0 ? 'text-[#059669]' : 'text-[#EF4444]'}">
-                            ฿${memberBalance.toLocaleString()}
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-2 w-32 flex-shrink-0">
-                        <button class="action-btn w-full btn-tx"><i class="fas fa-bolt text-[#C49A45]"></i> ทำรายการ</button>
-                        <div class="grid grid-cols-3 gap-1.5 w-full">
-                            <button class="mini-btn mini-btn-history btn-hist" title="ประวัติ"><i class="fas fa-history"></i></button>
-                            <button class="mini-btn mini-btn-edit btn-edit" title="แก้ไข"><i class="fas fa-pen"></i></button>
-                            <button class="mini-btn mini-btn-delete btn-del" title="ลบ"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                `;
-
-                // ผูก Event Listener (วิธีนี้ป้องกันบัค Code พัง 100%)
-                card.querySelector('.btn-tx').addEventListener('click', () => actionTransact(dbKey, member.nick));
-                card.querySelector('.btn-hist').addEventListener('click', () => actionHistory(dbKey, member.nick));
-                card.querySelector('.btn-edit').addEventListener('click', () => actionEdit(dbKey, member.nick, member.name));
-                card.querySelector('.btn-del').addEventListener('click', () => actionDelete(dbKey));
-
                 listContainer.appendChild(card);
             });
 
@@ -533,3 +428,4 @@
     </script>
 </body>
 </html>
+
