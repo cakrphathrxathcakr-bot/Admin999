@@ -22,7 +22,7 @@
             --text-muted: #8E929B;
             --gold-primary: #C49A45;
             --gold-grad: linear-gradient(135deg, #E2C275 0%, #D4AF37 50%, #B38728 100%);
-            --border-light: #F0EDE5;
+            --border-light: #E5E7EB;
         }
 
         body {
@@ -38,7 +38,6 @@
         .text-gold { color: var(--gold-primary); }
         .bg-gold { background: var(--gold-grad); color: #fff; }
 
-        /* Panels */
         .glass-box {
             background: var(--bg-surface);
             border: 1px solid var(--border-light);
@@ -47,53 +46,36 @@
             transition: all 0.3s ease;
         }
 
-        /* Inputs */
         .input-light {
-            background: #F9FAFB; border: 1px solid #E5E7EB; color: var(--text-main); transition: 0.3s; width: 100%;
-            box-sizing: border-box;
+            background: #F9FAFB; border: 1px solid #E5E7EB; color: var(--text-main); 
+            transition: 0.3s; width: 100%; box-sizing: border-box;
         }
         .input-light:focus { border-color: var(--gold-primary); outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(196, 154, 69, 0.1); }
 
-        /* User Card */
         .user-card {
-            background: #FFFFFF;
-            border: 1px solid var(--border-light);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.2s;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+            background: #FFFFFF; border: 1px solid var(--border-light); border-radius: 16px;
+            padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between;
+            align-items: center; transition: all 0.2s; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
         .user-card:active { transform: scale(0.98); border-color: var(--gold-primary); }
 
         .btn-action {
-            background: rgba(196, 154, 69, 0.1);
-            color: var(--gold-primary);
-            border: 1px solid rgba(196, 154, 69, 0.2);
-            border-radius: 10px; padding: 10px 14px;
-            font-size: 13px; font-weight: 600;
-            display: flex; align-items: center; gap: 6px;
-            transition: 0.2s;
+            background: rgba(196, 154, 69, 0.1); color: var(--gold-primary);
+            border: 1px solid rgba(196, 154, 69, 0.2); border-radius: 10px; 
+            padding: 10px 14px; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
         }
         .btn-action:active { background: var(--gold-primary); color: white; }
 
-        /* Tool Buttons */
         .btn-tool {
             background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px; padding: 8px 0;
             display: flex; flex-direction: column; align-items: center; gap: 4px;
-            transition: 0.2s; font-size: 10px; font-weight: 500;
+            transition: 0.2s; font-size: 10px; font-weight: 500; cursor: pointer;
         }
-        .btn-tool-history { color: #4B5563; }
-        .btn-tool-history:active { background: #E5E7EB; }
-        .btn-tool-edit { color: #3B82F6; }
-        .btn-tool-edit:active { background: #3B82F6; color: white; }
-        .btn-tool-del { color: #EF4444; }
-        .btn-tool-del:active { background: #EF4444; color: white; }
+        .btn-tool-history { color: #4B5563; } .btn-tool-history:active { background: #E5E7EB; }
+        .btn-tool-edit { color: #3B82F6; } .btn-tool-edit:active { background: #3B82F6; color: white; }
+        .btn-tool-del { color: #EF4444; } .btn-tool-del:active { background: #EF4444; color: white; }
 
-        /* SweetAlert Custom */
         .swal2-popup { border-radius: 24px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important; border: 1px solid var(--border-light) !important; }
         .swal2-html-container { margin: 0.5em 1em 0.3em !important; }
 
@@ -106,7 +88,7 @@
 </head>
 <body class="pb-10">
 
-    <div id="loginSection" class="fixed inset-0 bg-[var(--bg-body)] z-50 flex items-center justify-center p-6">
+    <div id="loginSection" class="fixed inset-0 bg-[var(--bg-body)] z-50 flex items-center justify-center p-6 transition-opacity duration-500">
         <div class="glass-box p-10 w-full max-w-sm text-center">
             <div class="w-20 h-20 mx-auto mb-5 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100">
                 <i class="fas fa-crown text-4xl text-[#C49A45]"></i>
@@ -114,10 +96,10 @@
             <h2 class="text-2xl font-eng text-[var(--text-main)] mb-1 tracking-[4px]">MANAGEMENT</h2>
             <p class="text-xs text-[var(--text-muted)] mb-8 font-num tracking-widest uppercase">Admin Authorization</p>
             
-            <form onsubmit="event.preventDefault(); window.doLogin(); return false;" class="w-full">
-                <input type="password" id="pass" placeholder="Enter PIN" class="input-light p-4 rounded-xl text-center text-xl font-num tracking-[10px] mb-6 w-full">
-                <button type="submit" class="w-full bg-gold py-4 rounded-xl font-medium tracking-wider text-sm font-outfit shadow-md">AUTHORIZE ACCESS</button>
-            </form>
+            <div class="w-full">
+                <input type="password" id="pass" placeholder="Enter PIN" onkeyup="if(event.key === 'Enter') window.doLogin();" class="input-light p-4 rounded-xl text-center text-xl font-num tracking-[10px] mb-6">
+                <button onclick="window.doLogin()" class="w-full bg-gold py-4 rounded-xl font-medium tracking-wider text-sm font-outfit shadow-md">AUTHORIZE ACCESS</button>
+            </div>
         </div>
     </div>
 
@@ -133,7 +115,7 @@
                     <p class="text-[10px] text-[var(--text-muted)] mt-0.5">พระมหาจักรภัทร คมฺภีรญาณเมธี</p>
                 </div>
             </div>
-            <button onclick="location.reload()" class="w-10 h-10 rounded-full bg-gray-50 text-[var(--text-muted)] flex items-center justify-center border border-gray-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all">
+            <button onclick="location.reload()" class="w-10 h-10 rounded-full bg-gray-50 text-[var(--text-muted)] flex items-center justify-center border border-gray-200 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all shadow-sm">
                 <i class="fas fa-sign-out-alt"></i>
             </button>
         </header>
@@ -164,14 +146,14 @@
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-            <button onclick="window.openAddModal()" class="glass-box p-4 flex flex-col items-center justify-center gap-2 hover:border-[#C49A45] transition-all">
+            <button onclick="window.openAddModal()" class="glass-box p-4 flex flex-col items-center justify-center gap-2 hover:border-[#C49A45] transition-all cursor-pointer">
                 <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-1"><i class="fas fa-user-plus text-lg"></i></div>
                 <span class="text-xs font-semibold text-[var(--text-main)]">เพิ่มสมาชิกใหม่</span>
             </button>
             <label class="glass-box p-4 flex flex-col items-center justify-center gap-2 hover:border-[#C49A45] transition-all cursor-pointer">
                 <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center mb-1"><i class="fas fa-file-excel text-lg"></i></div>
                 <span class="text-xs font-semibold text-[var(--text-main)]">นำเข้าไฟล์ CSV</span>
-                <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="importCSV(this)">
+                <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="window.importCSV(this)">
             </label>
         </div>
 
@@ -180,7 +162,7 @@
                 <h3 class="text-sm font-bold text-[var(--text-main)] font-eng tracking-widest"><i class="fas fa-address-book text-[#C49A45] mr-2"></i> Client Accounts</h3>
                 <div class="relative w-full sm:w-64">
                     <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="search" oninput="doSearch()" placeholder="ค้นหาชื่อ หรือ เลขบัญชี..." class="input-light pl-11 pr-4 py-2.5 rounded-xl text-sm">
+                    <input type="text" id="searchInput" onkeyup="window.doSearch()" placeholder="ค้นหาชื่อ หรือ เลขบัญชี..." class="input-light pl-11 pr-4 py-2.5 rounded-xl text-sm">
                 </div>
             </div>
 
@@ -190,7 +172,7 @@
                 <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-gray-100">
                     <i class="fas fa-inbox text-2xl text-gray-300"></i>
                 </div>
-                <p class="text-sm font-medium">ไม่พบข้อมูลสมาชิกในระบบ</p>
+                <p class="text-sm font-medium">ไม่พบข้อมูลในระบบ</p>
             </div>
         </div>
     </div>
@@ -212,14 +194,18 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         
-        let membersData = [];
-        let txData = [];
+        // 🛡️ STATE MANAGEMENT (ระบบศูนย์กลางป้องกันบัคข้อมูลซ้อนทับ)
+        let state = {
+            members: [],
+            transactions: [],
+            searchQuery: ''
+        };
+        
         let myChart = null; 
-        
-        // สถานะป้องกันดึงข้อมูลซ้ำ
-        let isSystemInitialized = false;
-        
         const ADMIN_PASS = "2598";
+
+        // ป้องกันดึงข้อมูลซ้ำซ้อน
+        let isSystemInitialized = false;
 
         window.doLogin = () => {
             const input = document.getElementById('pass').value;
@@ -228,7 +214,6 @@
                 setTimeout(() => {
                     document.getElementById('loginSection').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
-                    // เรียกฐานข้อมูลแค่ครั้งเดียว ป้องกันเว็บหน่วงหรือเด้งออก
                     if(!isSystemInitialized) {
                         initData();
                         isSystemInitialized = true;
@@ -240,35 +225,42 @@
         };
 
         function initData() {
+            // ดึง Members
             onValue(ref(db, 'members'), (snap) => {
                 const data = snap.val() || {};
-                membersData = Object.keys(data).map(key => ({
-                    dbKey: key, 
-                    ...data[key]
+                // แปลง Object เป็น Array โดยใช้ Key ใน DB เป็นตัวอ้างอิงหลัก (code)
+                state.members = Object.keys(data).map(key => ({
+                    code: key, // รหัสจริงในฐานข้อมูล
+                    nick: data[key].nick || '',
+                    name: data[key].name || ''
                 }));
-                render();
-                updateChart(); 
+                updateUI();
             });
 
-            onValue(ref(db, 'transactions'), (tSnap) => {
-                const txObj = tSnap.val() || {};
-                txData = Object.keys(txObj).map(key => ({
+            // ดึง Transactions
+            onValue(ref(db, 'transactions'), (snap) => {
+                const txObj = snap.val() || {};
+                state.transactions = Object.keys(txObj).map(key => ({
                     id: key,
                     ...txObj[key]
                 }));
-                render();
-                updateChart(); 
+                updateUI();
             });
         }
 
-        // --- DRAW DOUGHNUT CHART ---
-        function updateChart() {
+        // ศูนย์กลางการเรนเดอร์หน้าจอ
+        function updateUI() {
+            renderList();
+            renderChart();
+        }
+
+        function renderChart() {
             const ctx = document.getElementById('financeChart').getContext('2d');
-            
             let memberBalances = [];
-            membersData.forEach(m => {
+            
+            state.members.forEach(m => {
                 let bal = 0;
-                txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
+                state.transactions.filter(t => t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
                 if(bal > 0) memberBalances.push({ name: m.nick || m.name || m.code, balance: bal });
@@ -283,17 +275,12 @@
             if(myChart) myChart.destroy();
 
             if(data.length === 0) {
-                labels.push('ยังไม่มียอดเงิน');
-                data.push(1);
-                bgColors.unshift('#E5E7EB');
+                labels.push('ไม่มีข้อมูล'); data.push(1); bgColors.unshift('#E5E7EB');
             }
 
             myChart = new Chart(ctx, {
                 type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{ data: data, backgroundColor: bgColors, borderWidth: 3, borderColor: '#FFFFFF', hoverOffset: 6 }]
-                },
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: bgColors, borderWidth: 3, borderColor: '#FFFFFF', hoverOffset: 6 }] },
                 options: {
                     responsive: true, maintainAspectRatio: false, cutout: '70%', 
                     plugins: {
@@ -304,7 +291,7 @@
                             padding: 12, borderColor: '#E5E7EB', borderWidth: 1, boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
                             callbacks: {
                                 label: function(context) {
-                                    if(data.length === 1 && labels[0] === 'ยังไม่มียอดเงิน') return ' 0 บาท';
+                                    if(data.length === 1 && labels[0] === 'ไม่มีข้อมูล') return ' 0 บาท';
                                     const value = context.raw;
                                     const total = context.chart._metasets[context.datasetIndex].total;
                                     const percentage = ((value / total) * 100).toFixed(1) + '%';
@@ -317,56 +304,64 @@
             });
         }
 
-        function render(data = membersData) {
+        function renderList() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
             let totalSys = 0;
-            document.getElementById('totalMembers').innerText = membersData.length;
+            document.getElementById('totalMembers').innerText = state.members.length;
 
-            if(data.length === 0) document.getElementById('emptyState').classList.remove('hidden');
+            // คัดกรองจาก Search (กันบัคพิมพ์แล้วพัง)
+            let filteredMembers = state.members;
+            if (state.searchQuery) {
+                const q = state.searchQuery.toLowerCase();
+                filteredMembers = state.members.filter(m => 
+                    (m.code || '').toLowerCase().includes(q) || 
+                    (m.nick || '').toLowerCase().includes(q) || 
+                    (m.name || '').toLowerCase().includes(q)
+                );
+            }
+
+            if(filteredMembers.length === 0) document.getElementById('emptyState').classList.remove('hidden');
             else document.getElementById('emptyState').classList.add('hidden');
 
-            let renderData = [...data];
-            renderData.sort((a,b) => (parseInt(a.code) || 0) - (parseInt(b.code) || 0)).forEach(m => {
+            filteredMembers.sort((a,b) => (parseInt(a.code) || 0) - (parseInt(b.code) || 0)).forEach(m => {
                 let bal = 0;
-                txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
+                state.transactions.filter(t => t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
                 totalSys += bal;
 
-                const safeKey = m.dbKey ? m.dbKey.replace(/'/g, "\\'") : '';
-                const dispCode = m.code || '-';
-                const dispNick = m.nick || '-';
-                const dispName = m.name || '-';
-                const safeNick = dispNick.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const safeName = dispName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                // เข้ารหัสตัวแปรให้ปลอดภัยก่อนยัดลงใน HTML (ป้องกัน XSS/Syntax Error)
+                const safeCode = m.code.replace(/'/g, "\\'");
+                const safeNick = m.nick.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeName = m.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                 tbody.innerHTML += `
                     <div class="user-card">
-                        <div class="flex-1 pr-2">
+                        <div class="flex-1 pr-2 overflow-hidden">
                             <div class="flex items-baseline gap-2 mb-1">
-                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${dispCode}</span>
+                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${m.code}</span>
                             </div>
-                            <h4 class="font-bold text-[16px] text-[var(--text-main)] leading-tight mt-1">${dispNick}</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] truncate w-32">${dispName}</p>
+                            <h4 class="font-bold text-[16px] text-[var(--text-main)] leading-tight mt-1 truncate">${m.nick}</h4>
+                            <p class="text-[11px] text-[var(--text-muted)] truncate w-full">${m.name}</p>
                             <div class="mt-2 text-[22px] font-num font-semibold ${bal >= 0 ? 'text-[#059669]' : 'text-[#DC2626]'}">
                                 ฿${bal.toLocaleString()}
                             </div>
                         </div>
                         
-                        <div class="flex flex-col gap-2.5 w-36">
-                            <button onclick="window.openTxModal('${safeKey}', '${safeNick}')" class="btn-action justify-center shadow-sm">
+                        <div class="flex flex-col gap-2.5 w-36 flex-shrink-0">
+                            <button onclick="window.openTxModal('${safeCode}', '${safeNick}')" class="btn-action w-full">
                                 <i class="fas fa-bolt text-[#C49A45]"></i> ทำรายการ
                             </button>
-                            <div class="grid grid-cols-3 gap-1.5">
-                                <button onclick="window.openHistoryModal('${safeKey}', '${safeNick}')" class="btn-tool btn-tool-history" title="ดูประวัติ/ลบรายการ">
+                            <div class="grid grid-cols-3 gap-1.5 w-full">
+                                <button onclick="window.openHistoryModal('${safeCode}', '${safeNick}')" class="btn-tool btn-tool-history" title="ดูประวัติ">
                                     <i class="fas fa-history text-sm"></i>
                                 </button>
-                                <button onclick="window.openEditModal('${safeKey}', '${safeNick}', '${safeName}')" class="btn-tool btn-tool-edit" title="แก้ไขชื่อ">
+                                <button onclick="window.openEditModal('${safeCode}', '${safeNick}', '${safeName}')" class="btn-tool btn-tool-edit" title="แก้ไข">
                                     <i class="fas fa-pen text-[13px]"></i>
                                 </button>
-                                <button onclick="window.del('${safeKey}')" class="btn-tool btn-tool-del" title="ลบบัญชี">
+                                <button onclick="window.del('${safeCode}')" class="btn-tool btn-tool-del" title="ลบ">
                                     <i class="fas fa-trash text-[13px]"></i>
                                 </button>
                             </div>
@@ -377,8 +372,13 @@
             document.getElementById('totalSystemBalance').innerText = totalSys.toLocaleString(undefined, {minimumFractionDigits:2});
         }
 
+        window.doSearch = () => {
+            state.searchQuery = document.getElementById('searchInput').value.trim();
+            renderList(); // เรียกแค่เรนเดอร์ลิสต์ใหม่ ไม่ต้องโหลดข้อมูลฐานข้อมูลใหม่
+        };
+
         // --- ACTIONS ---
-        window.openTxModal = async (dbKey, nick) => {
+        window.openTxModal = async (code, nick) => {
             const result = await Swal.fire({
                 title: `<span style="font-family:'Sarabun'; color:#C49A45; font-size:1.3rem; font-weight:bold;">ทำรายการ: ${nick}</span>`,
                 text: 'เลือกประเภทรายการที่ต้องการ',
@@ -403,17 +403,16 @@
 
                 if (amount) {
                     await push(ref(db, 'transactions'), {
-                        studentCode: dbKey, type: isDeposit ? 'deposit' : 'withdraw',
-                        amount: amount, date: new Date().toISOString()
+                        studentCode: code, type: isDeposit ? 'deposit' : 'withdraw',
+                        amount: parseFloat(amount), date: new Date().toISOString()
                     });
                     Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#fff' });
                 }
             }
         };
 
-        window.openHistoryModal = (dbKey, nick) => {
-            const targetMember = membersData.find(m => m.dbKey === dbKey);
-            let userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
+        window.openHistoryModal = (code, nick) => {
+            let userTxs = state.transactions.filter(t => t.studentCode === code);
             userTxs.sort((a,b) => new Date(b.date) - new Date(a.date));
 
             let html = `<div class="max-h-72 overflow-y-auto pr-1 space-y-2 mt-2">`;
@@ -434,7 +433,7 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="text-base font-bold font-num ${isDep ? 'text-green-600' : 'text-red-500'}">${isDep ? '+' : '-'}${parseFloat(t.amount).toLocaleString()}</span>
-                                <button onclick="deleteTx('${t.id}', '${dbKey}', '${nick}')" class="w-7 h-7 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition border border-red-200 shadow-sm" title="ลบรายการนี้">
+                                <button onclick="window.deleteTx('${t.id}', '${code}', '${nick}')" class="w-7 h-7 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition border border-red-200 shadow-sm" title="ลบรายการนี้">
                                     <i class="fas fa-times text-[10px]"></i>
                                 </button>
                             </div>
@@ -450,7 +449,7 @@
             });
         };
 
-        window.deleteTx = (txId, dbKey, nick) => {
+        window.deleteTx = (txId, code, nick) => {
             Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'">ลบรายการนี้?</span>', text: "ยอดเงินจะถูกคำนวณใหม่ทันที",
                 icon: 'warning', background: '#fff',
@@ -459,26 +458,35 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     await remove(ref(db, 'transactions/' + txId));
-                    setTimeout(() => { window.openHistoryModal(dbKey, nick); }, 300);
+                    Swal.fire({title:'ลบแล้ว', icon:'success', timer:800, showConfirmButton:false});
+                    // ไม่ต้องเปิดหน้าต่างซ้ำ ให้ปิดไปเลยเพื่อดูผลลัพธ์ที่เปลี่ยนไปบนหน้าจอหลัก
                 } else {
-                    window.openHistoryModal(dbKey, nick);
+                    window.openHistoryModal(code, nick);
                 }
             });
         };
 
-        window.openEditModal = async (dbKey, oldNick, oldName) => {
+        // 🛡️ แก้ชื่อบัญชี (ห้ามแก้รหัส ป้องกันบัญชีงอก)
+        window.openEditModal = async (code, oldNick, oldName) => {
             const { value: formValues } = await Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">แก้ไขข้อมูล</span>', background: '#fff', color: '#2C303A',
                 html: `
-                    <input id="edit-nick" class="swal2-input input-light" value="${oldNick}">
-                    <input id="edit-name" class="swal2-input input-light text-sm" value="${oldName}">
+                    <div class="text-left mb-2 text-xs text-gray-500 ml-1">เลขบัญชี (ห้ามแก้ไข)</div>
+                    <input class="swal2-input input-light bg-gray-100 text-gray-400 cursor-not-allowed font-num text-center mb-4 mt-0" value="${code}" disabled>
+                    
+                    <div class="text-left mb-2 text-xs text-gray-500 ml-1">ชื่อเล่น (ฉายา)</div>
+                    <input id="edit-nick" class="swal2-input input-light mt-0 mb-4" value="${oldNick}">
+                    
+                    <div class="text-left mb-2 text-xs text-gray-500 ml-1">ชื่อจริง-นามสกุล</div>
+                    <input id="edit-name" class="swal2-input input-light text-sm mt-0" value="${oldName}">
                 `,
-                confirmButtonText: 'บันทึกข้อมูล', confirmButtonColor: '#3B82F6',
+                confirmButtonText: 'บันทึกทับข้อมูลเดิม', confirmButtonColor: '#3B82F6',
                 preConfirm: () => [ document.getElementById('edit-nick').value, document.getElementById('edit-name').value ]
             });
 
             if (formValues) {
-                await update(ref(db, 'members/' + dbKey), { 
+                // อัปเดตทับเป๊ะๆ ตามรหัส (Code)
+                await update(ref(db, 'members/' + code), { 
                     nick: formValues[0], 
                     name: formValues[1] 
                 });
@@ -486,7 +494,8 @@
             }
         };
 
-        window.del = (dbKey) => {
+        // 🛡️ ลบให้เกลี้ยง 100%
+        window.del = (code) => {
             Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">ยืนยันการลบบัญชี?</span>', text: "ข้อมูลเงินฝากและประวัติทั้งหมดจะหายไปถาวร", 
                 icon: 'warning', background: '#fff', color: '#2C303A', 
@@ -494,10 +503,8 @@
                 cancelButtonText: 'ยกเลิก', cancelButtonColor: '#E5E7EB', customClass: { cancelButton: 'text-gray-700 font-semibold' }
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    const targetMember = membersData.find(m => m.dbKey === dbKey);
-                    await remove(ref(db, 'members/' + dbKey)); 
-
-                    const userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
+                    await remove(ref(db, 'members/' + code)); 
+                    const userTxs = state.transactions.filter(t => t.studentCode === code);
                     for(let t of userTxs) await remove(ref(db, 'transactions/' + t.id));
                     Swal.fire({title:'ลบเรียบร้อย', icon:'success', timer:1000, showConfirmButton:false});
                 }
@@ -508,7 +515,7 @@
             const { value: formValues } = await Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">เพิ่มบัญชีใหม่</span>', background: '#fff', color: '#2C303A',
                 html: `
-                    <input id="swal-code" class="swal2-input input-light font-num tracking-widest text-center font-semibold" placeholder="เลขบัญชี 6 หลัก">
+                    <input id="swal-code" class="swal2-input input-light font-num tracking-widest text-center font-semibold" placeholder="เลขบัญชี (เช่น 100001)">
                     <input id="swal-nick" class="swal2-input input-light text-center" placeholder="ชื่อเล่น (ฉายา)">
                     <input id="swal-name" class="swal2-input input-light text-center text-sm" placeholder="ชื่อจริง-นามสกุล">
                 `,
@@ -518,9 +525,10 @@
 
             if (formValues && formValues[0]) {
                 const [code, nick, name] = formValues;
+                // กรองให้เหลือแต่ตัวเลขและตัวอักษรภาษาอังกฤษเท่านั้น
                 const cleanCode = code.replace(/[^a-zA-Z0-9]/g, '');
                 if(cleanCode) {
-                    await set(ref(db, 'members/' + cleanCode), { code: cleanCode, nick, name });
+                    await set(ref(db, 'members/' + cleanCode), { nick: nick, name: name });
                     Swal.fire({ icon: 'success', title: 'เพิ่มบัญชีแล้ว', timer: 1000, showConfirmButton: false });
                 }
             }
@@ -535,10 +543,15 @@
                     let count = 0;
                     for (const row of results.data) {
                         if (row.เลขที่บัญชี) {
-                            const code = row.เลขที่บัญชี.toString().replace(/[\s\uFEFF\xA0]/g, '').replace(/[^a-zA-Z0-9]/g, '');
+                            const code = String(row.เลขที่บัญชี).replace(/[\s\uFEFF\xA0]/g, '').replace(/[^a-zA-Z0-9]/g, '');
                             if(!code) continue;
-                            await set(ref(db, 'members/' + code), { code: code, nick: row['นมัสการ สามเณร..'] || '', name: row.ชื่อจริง || '' });
-                            if (row.ยอดคงเหลือ) await push(ref(db, 'transactions'), { studentCode: code, type: 'deposit', amount: parseFloat(row.ยอดคงเหลือ.replace(/,/g, '')), date: new Date().toISOString() });
+                            await set(ref(db, 'members/' + code), { nick: row['นมัสการ สามเณร..'] || '', name: row.ชื่อจริง || '' });
+                            if (row.ยอดคงเหลือ) {
+                                const amount = parseFloat(String(row.ยอดคงเหลือ).replace(/,/g, ''));
+                                if (!isNaN(amount) && amount > 0) {
+                                    await push(ref(db, 'transactions'), { studentCode: code, type: 'deposit', amount: amount, date: new Date().toISOString() });
+                                }
+                            }
                             count++;
                         }
                     }
@@ -546,16 +559,6 @@
                     input.value = '';
                 }
             });
-        };
-
-        window.doSearch = () => {
-            const t = document.getElementById('search').value.toLowerCase();
-            const filtered = membersData.filter(m => 
-                (m.code || '').toString().toLowerCase().includes(t) || 
-                (m.nick || '').toLowerCase().includes(t) || 
-                (m.name || '').toLowerCase().includes(t)
-            );
-            render(filtered);
         };
     </script>
 </body>
