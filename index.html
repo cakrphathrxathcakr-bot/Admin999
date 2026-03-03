@@ -79,15 +79,12 @@
         }
         .btn-action:active { background: var(--gold-primary); color: black; }
 
-        /* Custom SweetAlert */
         .swal2-popup { border: 1px solid var(--gold-primary) !important; border-radius: 20px !important; }
-
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-vanta); }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 
-        .chart-container { position: relative; height: 200px; width: 100%; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
     </style>
 </head>
 <body class="pb-10">
@@ -125,7 +122,7 @@
                 <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl"><i class="fas fa-vault"></i></div>
                 <p class="text-[10px] text-[#D4AF37] font-eng tracking-widest mb-1">Total Assets</p>
                 <h3 id="totalSystemBalance" class="text-2xl font-bold text-white font-num">0.00</h3>
-                <p class="text-[10px] text-gray-500 mt-1">เงินหมุนเวียนทั้งหมด (THB)</p>
+                <p class="text-[10px] text-gray-500 mt-1">ยอดเงินรวมทั้งธนาคาร</p>
             </div>
             <div class="glass-box p-5 relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-10 text-7xl"><i class="fas fa-users"></i></div>
@@ -137,8 +134,8 @@
 
         <div class="glass-box p-4 md:p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-sm font-bold text-white font-eng tracking-widest"><i class="fas fa-chart-line text-[#D4AF37] mr-2"></i> Cash Flow</h3>
-                <span class="text-[10px] text-gray-500 border border-gray-700 px-2 py-1 rounded">ยอดรวมรายวัน</span>
+                <h3 class="text-sm font-bold text-white font-eng tracking-widest"><i class="fas fa-chart-pie text-[#D4AF37] mr-2"></i> Wealth Distribution</h3>
+                <span class="text-[10px] text-gray-400 border border-gray-700 px-2 py-1 rounded bg-[#0a0a0a]">สัดส่วนเงินฝาก (%)</span>
             </div>
             <div class="chart-container">
                 <canvas id="financeChart"></canvas>
@@ -180,7 +177,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getDatabase, ref, push, set, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyAiCtKW-U5QWp3yUsvToJlh2pT7sjiQ4Iw",
             authDomain: "taebankwat.firebaseapp.com",
@@ -196,12 +192,10 @@
         
         let membersData = [];
         let txData = [];
-        let myChart = null; // ตัวแปรกราฟ
+        let myChart = null; 
         
-        // รหัสแอดมิน
         const ADMIN_PASS = "2598";
 
-        // Login Logic
         window.doLogin = () => {
             const input = document.getElementById('pass').value;
             if(input === ADMIN_PASS) {
@@ -222,53 +216,91 @@
                 onValue(ref(db, 'transactions'), (tSnap) => {
                     txData = tSnap.val() ? Object.values(tSnap.val()) : [];
                     render();
-                    updateChart(); // อัปเดตกราฟ
+                    updateChart(); // อัปเดตกราฟโดนัท
                 });
             });
         }
 
-        // --- DRAW CHART LOGIC ---
+        // --- DRAW DOUGHNUT CHART (สัดส่วนเงินฝาก) ---
         function updateChart() {
             const ctx = document.getElementById('financeChart').getContext('2d');
             
-            // ประมวลผลข้อมูลกราฟ (สมมติจัดกลุ่มตามวันที่ 7 วันล่าสุด)
-            const dates = {};
-            txData.forEach(t => {
-                const dateStr = new Date(t.date).toLocaleDateString('th-TH', {day:'numeric', month:'short'});
-                if(!dates[dateStr]) dates[dateStr] = { dep: 0, wit: 0 };
-                if(t.type === 'deposit') dates[dateStr].dep += parseFloat(t.amount);
-                else dates[dateStr].wit += parseFloat(t.amount);
+            // คำนวณยอดเงินของแต่ละคน
+            let memberBalances = [];
+            membersData.forEach(m => {
+                let bal = 0;
+                txData.filter(t => t.studentCode === m.code).forEach(t => {
+                    bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
+                });
+                if(bal > 0) {
+                    memberBalances.push({ name: m.nick || m.name, balance: bal });
+                }
             });
 
-            // ดึง 5 วันล่าสุดมาแสดง
-            const labels = Object.keys(dates).slice(-5);
-            const depData = labels.map(l => dates[l].dep);
-            const witData = labels.map(l => dates[l].wit);
+            // เรียงจากยอดเงินมากไปน้อย
+            memberBalances.sort((a,b) => b.balance - a.balance);
 
-            if(myChart) myChart.destroy(); // ลบกราฟเก่าก่อนวาดใหม่
+            const labels = memberBalances.map(m => m.name);
+            const data = memberBalances.map(m => m.balance);
+
+            // สีสันแบบพรีเมียม (ทอง, เงิน, บรอนซ์, มรกต, ฟ้า, ไพลิน)
+            const bgColors = [
+                '#D4AF37', '#E5E4E2', '#CD7F32', '#50C878', '#00FFFF',
+                '#9966CC', '#4169E1', '#E87A5D', '#B0BEC5', '#FFB6C1',
+                '#8A2BE2', '#00FA9A', '#FF4500', '#DAA520', '#1E90FF'
+            ];
+
+            if(myChart) myChart.destroy();
+
+            // ถ้าไม่มีใครมียอดเงินเลย
+            if(data.length === 0) {
+                labels.push('ยังไม่มียอดเงิน');
+                data.push(1);
+                bgColors.unshift('#333333');
+            }
 
             myChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'doughnut',
                 data: {
-                    labels: labels.length ? labels : ['ไม่มีข้อมูล'],
-                    datasets: [
-                        { label: 'ยอดฝาก', data: depData, backgroundColor: '#10B981', borderRadius: 4 },
-                        { label: 'ยอดถอน', data: witData, backgroundColor: '#EF4444', borderRadius: 4 }
-                    ]
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderWidth: 2,
+                        borderColor: '#121212',
+                        hoverOffset: 4
+                    }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { ticks: { color: '#888', font: {family: 'Space Grotesk'} }, grid: { color: '#222' } },
-                        x: { ticks: { color: '#888', font: {family: 'Sarabun'} }, grid: { display: false } }
+                    cutout: '65%', // ความกลวงตรงกลาง
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#bbb', font: {family: 'Sarabun', size: 12}, boxWidth: 12, padding: 15 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { family: 'Sarabun', size: 14 },
+                            bodyFont: { family: 'Space Grotesk', size: 13 },
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    if(data.length === 1 && labels[0] === 'ยังไม่มียอดเงิน') return ' 0 บาท';
+                                    const value = context.raw;
+                                    const total = context.chart._metasets[context.datasetIndex].total;
+                                    const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                    return ` ฿${value.toLocaleString()} (${percentage})`;
+                                }
+                            }
+                        }
                     }
                 }
             });
         }
 
-        // --- RENDER MEMBER LIST (Mobile Cards) ---
+        // --- RENDER MEMBER LIST ---
         function render(data = membersData) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -286,7 +318,6 @@
                 });
                 totalSys += bal;
 
-                // สร้าง Card รายบุคคล
                 tbody.innerHTML += `
                     <div class="user-card">
                         <div class="flex-1">
@@ -316,10 +347,7 @@
         }
 
         // --- ACTIONS (EASY TRANSACT) ---
-
-        // 1. Easy Deposit/Withdraw Modal
         window.openTxModal = async (code, nick) => {
-            // สไตล์ปุ่มแบบหรูหรา
             const result = await Swal.fire({
                 title: `<span style="font-family:'Sarabun'; color:#D4AF37; font-size:1.2rem;">ทำรายการ: ${nick}</span>`,
                 text: 'กรุณาเลือกประเภทที่ต้องการ',
@@ -335,8 +363,6 @@
 
             if (result.isConfirmed || result.isDenied) {
                 const isDeposit = result.isConfirmed;
-                const actionText = isDeposit ? 'ฝากเงินเข้าบัญชี' : 'ถอนเงินออกจากบัญชี';
-                
                 const { value: amount } = await Swal.fire({
                     title: `<span style="font-family:'Sarabun'; font-size:1.2rem;">ระบุจำนวนเงิน${isDeposit?'ฝาก':'ถอน'}</span>`,
                     input: 'number',
@@ -349,17 +375,14 @@
 
                 if (amount) {
                     await push(ref(db, 'transactions'), {
-                        studentCode: code,
-                        type: isDeposit ? 'deposit' : 'withdraw',
-                        amount: amount,
-                        date: new Date().toISOString()
+                        studentCode: code, type: isDeposit ? 'deposit' : 'withdraw',
+                        amount: amount, date: new Date().toISOString()
                     });
                     Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#111', color:'#D4AF37' });
                 }
             }
         };
 
-        // 2. Add Member
         window.openAddModal = async () => {
             const { value: formValues } = await Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'">เพิ่มบัญชีใหม่</span>',
@@ -380,7 +403,6 @@
             }
         };
 
-        // 3. Edit Member
         window.openEditModal = async (code, oldNick, oldName) => {
             const { value: formValues } = await Swal.fire({
                 title: 'แก้ไขข้อมูล',
@@ -399,7 +421,6 @@
             }
         };
 
-        // 4. Delete
         window.del = (code) => {
             Swal.fire({
                 title: 'ยืนยันลบบัญชี?', text: "ข้อมูลเงินฝาก-ถอนจะถูกลบทั้งหมด", icon: 'warning',
@@ -412,7 +433,6 @@
             });
         };
 
-        // 5. CSV Import
         window.importCSV = (input) => {
             const file = input.files[0];
             if (!file) return;
