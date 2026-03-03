@@ -50,6 +50,7 @@
         /* Inputs */
         .input-light {
             background: #F9FAFB; border: 1px solid #E5E7EB; color: var(--text-main); transition: 0.3s; width: 100%;
+            box-sizing: border-box;
         }
         .input-light:focus { border-color: var(--gold-primary); outline: none; background: #fff; box-shadow: 0 0 0 3px rgba(196, 154, 69, 0.1); }
 
@@ -92,6 +93,7 @@
         .btn-tool-del { color: #EF4444; }
         .btn-tool-del:active { background: #EF4444; color: white; }
 
+        /* SweetAlert Custom */
         .swal2-popup { border-radius: 24px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important; border: 1px solid var(--border-light) !important; }
         .swal2-html-container { margin: 0.5em 1em 0.3em !important; }
 
@@ -112,8 +114,10 @@
             <h2 class="text-2xl font-eng text-[var(--text-main)] mb-1 tracking-[4px]">MANAGEMENT</h2>
             <p class="text-xs text-[var(--text-muted)] mb-8 font-num tracking-widest uppercase">Admin Authorization</p>
             
-            <input type="password" id="pass" placeholder="Enter PIN" class="input-light p-4 rounded-xl text-center text-xl font-num tracking-[10px] mb-6">
-            <button onclick="doLogin()" class="w-full bg-gold py-4 rounded-xl font-medium tracking-wider text-sm font-outfit shadow-md">AUTHORIZE ACCESS</button>
+            <form onsubmit="event.preventDefault(); window.doLogin(); return false;" class="w-full">
+                <input type="password" id="pass" placeholder="Enter PIN" class="input-light p-4 rounded-xl text-center text-xl font-num tracking-[10px] mb-6 w-full">
+                <button type="submit" class="w-full bg-gold py-4 rounded-xl font-medium tracking-wider text-sm font-outfit shadow-md">AUTHORIZE ACCESS</button>
+            </form>
         </div>
     </div>
 
@@ -212,6 +216,9 @@
         let txData = [];
         let myChart = null; 
         
+        // สถานะป้องกันดึงข้อมูลซ้ำ
+        let isSystemInitialized = false;
+        
         const ADMIN_PASS = "2598";
 
         window.doLogin = () => {
@@ -221,16 +228,18 @@
                 setTimeout(() => {
                     document.getElementById('loginSection').classList.add('hidden');
                     document.getElementById('mainApp').classList.remove('hidden');
-                    initData();
+                    // เรียกฐานข้อมูลแค่ครั้งเดียว ป้องกันเว็บหน่วงหรือเด้งออก
+                    if(!isSystemInitialized) {
+                        initData();
+                        isSystemInitialized = true;
+                    }
                 }, 400);
             } else {
                 Swal.fire({ icon: 'error', title: 'ACCESS DENIED', background: '#fff', color: '#2C303A', confirmButtonColor: '#C49A45' });
             }
         };
 
-        // 🛠️ BUG FIX 1: แยกการทำงานของ Database เพื่อไม่ให้มันซ้อนทับกันจนบัค
         function initData() {
-            // โหลด Members
             onValue(ref(db, 'members'), (snap) => {
                 const data = snap.val() || {};
                 membersData = Object.keys(data).map(key => ({
@@ -241,7 +250,6 @@
                 updateChart(); 
             });
 
-            // โหลด Transactions แยกต่างหาก
             onValue(ref(db, 'transactions'), (tSnap) => {
                 const txObj = tSnap.val() || {};
                 txData = Object.keys(txObj).map(key => ({
@@ -253,10 +261,11 @@
             });
         }
 
+        // --- DRAW DOUGHNUT CHART ---
         function updateChart() {
             const ctx = document.getElementById('financeChart').getContext('2d');
-            let memberBalances = [];
             
+            let memberBalances = [];
             membersData.forEach(m => {
                 let bal = 0;
                 txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
@@ -318,7 +327,6 @@
             if(data.length === 0) document.getElementById('emptyState').classList.remove('hidden');
             else document.getElementById('emptyState').classList.add('hidden');
 
-            // 🛠️ BUG FIX 2: ป้องกันการจัดเรียงผิดพลาดจากชนิดข้อมูล
             let renderData = [...data];
             renderData.sort((a,b) => (parseInt(a.code) || 0) - (parseInt(b.code) || 0)).forEach(m => {
                 let bal = 0;
@@ -327,7 +335,6 @@
                 });
                 totalSys += bal;
 
-                // 🛠️ BUG FIX 3: ล้างอักขระพิเศษที่จะทำให้ปุ่มพัง (เช่น เครื่องหมายฟันหนู)
                 const safeKey = m.dbKey ? m.dbKey.replace(/'/g, "\\'") : '';
                 const dispCode = m.code || '-';
                 const dispNick = m.nick || '-';
@@ -459,7 +466,6 @@
             });
         };
 
-        // 🛠️ BUG FIX 4: อัปเดตทับข้อมูลเดิม 100% ไม่สร้างบัญชีใหม่
         window.openEditModal = async (dbKey, oldNick, oldName) => {
             const { value: formValues } = await Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">แก้ไขข้อมูล</span>', background: '#fff', color: '#2C303A',
@@ -472,7 +478,6 @@
             });
 
             if (formValues) {
-                // ใช้ update() ชี้ไปที่ dbKey ตรงๆ จะไม่มีการงอกบัญชีใหม่เด็ดขาด
                 await update(ref(db, 'members/' + dbKey), { 
                     nick: formValues[0], 
                     name: formValues[1] 
@@ -543,7 +548,6 @@
             });
         };
 
-        // 🛠️ BUG FIX 5: ป้องกันระบบค้นหาพัง กรณีชื่อบัญชีเป็นค่าว่าง (null/undefined)
         window.doSearch = () => {
             const t = document.getElementById('search').value.toLowerCase();
             const filtered = membersData.filter(m => 
