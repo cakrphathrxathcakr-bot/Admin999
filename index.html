@@ -92,7 +92,6 @@
         .btn-tool-del { color: #EF4444; }
         .btn-tool-del:active { background: #EF4444; color: white; }
 
-        /* SweetAlert Custom */
         .swal2-popup { border-radius: 24px !important; box-shadow: 0 20px 50px rgba(0,0,0,0.1) !important; border: 1px solid var(--border-light) !important; }
         .swal2-html-container { margin: 0.5em 1em 0.3em !important; }
 
@@ -193,7 +192,6 @@
     </div>
 
     <script type="module">
-        // เพิ่ม update เข้ามา เพื่อใช้แก้ไขข้อมูลทับบัญชีเดิม
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getDatabase, ref, push, set, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
@@ -230,48 +228,47 @@
             }
         };
 
+        // 🛠️ BUG FIX 1: แยกการทำงานของ Database เพื่อไม่ให้มันซ้อนทับกันจนบัค
         function initData() {
+            // โหลด Members
             onValue(ref(db, 'members'), (snap) => {
                 const data = snap.val() || {};
-                // จับ dbKey (รหัสจริงในฐานข้อมูล) มาเก็บไว้ด้วย ป้องกันปัญหาลบไม่ได้
                 membersData = Object.keys(data).map(key => ({
                     dbKey: key, 
                     ...data[key]
                 }));
+                render();
+                updateChart(); 
+            });
 
-                onValue(ref(db, 'transactions'), (tSnap) => {
-                    const txObj = tSnap.val() || {};
-                    txData = Object.keys(txObj).map(key => ({
-                        id: key,
-                        ...txObj[key]
-                    }));
-                    render();
-                    updateChart(); 
-                });
+            // โหลด Transactions แยกต่างหาก
+            onValue(ref(db, 'transactions'), (tSnap) => {
+                const txObj = tSnap.val() || {};
+                txData = Object.keys(txObj).map(key => ({
+                    id: key,
+                    ...txObj[key]
+                }));
+                render();
+                updateChart(); 
             });
         }
 
-        // --- DRAW DOUGHNUT CHART ---
         function updateChart() {
             const ctx = document.getElementById('financeChart').getContext('2d');
-            
             let memberBalances = [];
+            
             membersData.forEach(m => {
                 let bal = 0;
-                // อิงจาก dbKey และ code กรณีที่มันเคยถูกสร้างผิดเพี้ยนไว้
                 txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
-                if(bal > 0) {
-                    memberBalances.push({ name: m.nick || m.name, balance: bal });
-                }
+                if(bal > 0) memberBalances.push({ name: m.nick || m.name || m.code, balance: bal });
             });
 
             memberBalances.sort((a,b) => b.balance - a.balance);
 
             const labels = memberBalances.map(m => m.name);
             const data = memberBalances.map(m => m.balance);
-
             const bgColors = [ '#C49A45', '#94A3B8', '#A0522D', '#2E8B57', '#4169E1', '#9966CC', '#E87A5D', '#4B5563', '#00CED1', '#F472B6', '#8B5CF6', '#10B981', '#F59E0B', '#6366F1', '#14B8A6' ];
 
             if(myChart) myChart.destroy();
@@ -311,7 +308,6 @@
             });
         }
 
-        // --- RENDER MEMBER LIST ---
         function render(data = membersData) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -322,38 +318,45 @@
             if(data.length === 0) document.getElementById('emptyState').classList.remove('hidden');
             else document.getElementById('emptyState').classList.add('hidden');
 
-            data.sort((a,b) => a.code - b.code).forEach(m => {
+            // 🛠️ BUG FIX 2: ป้องกันการจัดเรียงผิดพลาดจากชนิดข้อมูล
+            let renderData = [...data];
+            renderData.sort((a,b) => (parseInt(a.code) || 0) - (parseInt(b.code) || 0)).forEach(m => {
                 let bal = 0;
                 txData.filter(t => t.studentCode === m.dbKey || t.studentCode === m.code).forEach(t => {
                     bal += (t.type === 'deposit' ? parseFloat(t.amount) : -parseFloat(t.amount));
                 });
                 totalSys += bal;
 
-                // ใช้ m.dbKey เสมอ ในการจัดการฐานข้อมูล
-                const safeKey = m.dbKey.replace(/'/g, "\\'"); 
+                // 🛠️ BUG FIX 3: ล้างอักขระพิเศษที่จะทำให้ปุ่มพัง (เช่น เครื่องหมายฟันหนู)
+                const safeKey = m.dbKey ? m.dbKey.replace(/'/g, "\\'") : '';
+                const dispCode = m.code || '-';
+                const dispNick = m.nick || '-';
+                const dispName = m.name || '-';
+                const safeNick = dispNick.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const safeName = dispName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
                 tbody.innerHTML += `
                     <div class="user-card">
                         <div class="flex-1 pr-2">
                             <div class="flex items-baseline gap-2 mb-1">
-                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${m.code}</span>
+                                <span class="font-num text-[11px] text-[#C49A45] font-bold tracking-[2px] bg-[#C49A45]/10 px-2 py-0.5 rounded-md">${dispCode}</span>
                             </div>
-                            <h4 class="font-bold text-[16px] text-[var(--text-main)] leading-tight mt-1">${m.nick}</h4>
-                            <p class="text-[11px] text-[var(--text-muted)] truncate w-32">${m.name}</p>
+                            <h4 class="font-bold text-[16px] text-[var(--text-main)] leading-tight mt-1">${dispNick}</h4>
+                            <p class="text-[11px] text-[var(--text-muted)] truncate w-32">${dispName}</p>
                             <div class="mt-2 text-[22px] font-num font-semibold ${bal >= 0 ? 'text-[#059669]' : 'text-[#DC2626]'}">
                                 ฿${bal.toLocaleString()}
                             </div>
                         </div>
                         
                         <div class="flex flex-col gap-2.5 w-36">
-                            <button onclick="window.openTxModal('${safeKey}', '${m.nick}')" class="btn-action justify-center shadow-sm">
+                            <button onclick="window.openTxModal('${safeKey}', '${safeNick}')" class="btn-action justify-center shadow-sm">
                                 <i class="fas fa-bolt text-[#C49A45]"></i> ทำรายการ
                             </button>
                             <div class="grid grid-cols-3 gap-1.5">
-                                <button onclick="window.openHistoryModal('${safeKey}', '${m.nick}')" class="btn-tool btn-tool-history" title="ดูประวัติ/ลบรายการ">
+                                <button onclick="window.openHistoryModal('${safeKey}', '${safeNick}')" class="btn-tool btn-tool-history" title="ดูประวัติ/ลบรายการ">
                                     <i class="fas fa-history text-sm"></i>
                                 </button>
-                                <button onclick="window.openEditModal('${safeKey}', '${m.nick}', '${m.name}')" class="btn-tool btn-tool-edit" title="แก้ไขชื่อ">
+                                <button onclick="window.openEditModal('${safeKey}', '${safeNick}', '${safeName}')" class="btn-tool btn-tool-edit" title="แก้ไขชื่อ">
                                     <i class="fas fa-pen text-[13px]"></i>
                                 </button>
                                 <button onclick="window.del('${safeKey}')" class="btn-tool btn-tool-del" title="ลบบัญชี">
@@ -396,12 +399,11 @@
                         studentCode: dbKey, type: isDeposit ? 'deposit' : 'withdraw',
                         amount: amount, date: new Date().toISOString()
                     });
-                    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#fff', color:'#2C303A' });
+                    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ', text: `${isDeposit?'+':'-'} ${parseFloat(amount).toLocaleString()} ฿`, timer: 1500, showConfirmButton: false, background:'#fff' });
                 }
             }
         };
 
-        // ประวัติและการลบรายการเฉพาะบุคคล
         window.openHistoryModal = (dbKey, nick) => {
             const targetMember = membersData.find(m => m.dbKey === dbKey);
             let userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
@@ -457,7 +459,7 @@
             });
         };
 
-        // 📝 แก้ไขชื่อทับบัญชีเดิม 100%
+        // 🛠️ BUG FIX 4: อัปเดตทับข้อมูลเดิม 100% ไม่สร้างบัญชีใหม่
         window.openEditModal = async (dbKey, oldNick, oldName) => {
             const { value: formValues } = await Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">แก้ไขข้อมูล</span>', background: '#fff', color: '#2C303A',
@@ -465,21 +467,20 @@
                     <input id="edit-nick" class="swal2-input input-light" value="${oldNick}">
                     <input id="edit-name" class="swal2-input input-light text-sm" value="${oldName}">
                 `,
-                confirmButtonText: 'บันทึกทับข้อมูลเดิม', confirmButtonColor: '#3B82F6',
+                confirmButtonText: 'บันทึกข้อมูล', confirmButtonColor: '#3B82F6',
                 preConfirm: () => [ document.getElementById('edit-nick').value, document.getElementById('edit-name').value ]
             });
 
             if (formValues) {
-                // ใช้คำสั่ง update() แทน set() เพื่อรักษาโครงสร้างเดิมและไม่สร้าง key ใหม่
+                // ใช้ update() ชี้ไปที่ dbKey ตรงๆ จะไม่มีการงอกบัญชีใหม่เด็ดขาด
                 await update(ref(db, 'members/' + dbKey), { 
                     nick: formValues[0], 
                     name: formValues[1] 
                 });
-                Swal.fire({ icon: 'success', title: 'อัปเดตทับบัญชีเดิมแล้ว', timer: 1500, showConfirmButton: false, background:'#fff' });
+                Swal.fire({ icon: 'success', title: 'อัปเดตเรียบร้อย', timer: 1500, showConfirmButton: false, background:'#fff' });
             }
         };
 
-        // 🗑️ ลบบัญชีได้ชัวร์ 100%
         window.del = (dbKey) => {
             Swal.fire({
                 title: '<span style="font-family:\'Sarabun\'; font-weight:bold;">ยืนยันการลบบัญชี?</span>', text: "ข้อมูลเงินฝากและประวัติทั้งหมดจะหายไปถาวร", 
@@ -489,7 +490,7 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     const targetMember = membersData.find(m => m.dbKey === dbKey);
-                    await remove(ref(db, 'members/' + dbKey)); // ลบฐานข้อมูลตรง key เป๊ะๆ
+                    await remove(ref(db, 'members/' + dbKey)); 
 
                     const userTxs = txData.filter(t => t.studentCode === dbKey || (targetMember && t.studentCode === targetMember.code));
                     for(let t of userTxs) await remove(ref(db, 'transactions/' + t.id));
@@ -529,7 +530,6 @@
                     let count = 0;
                     for (const row of results.data) {
                         if (row.เลขที่บัญชี) {
-                            // ล้างอักขระแปลกปลอมออกให้หมดก่อนเอาเข้าฐานข้อมูล
                             const code = row.เลขที่บัญชี.toString().replace(/[\s\uFEFF\xA0]/g, '').replace(/[^a-zA-Z0-9]/g, '');
                             if(!code) continue;
                             await set(ref(db, 'members/' + code), { code: code, nick: row['นมัสการ สามเณร..'] || '', name: row.ชื่อจริง || '' });
@@ -543,9 +543,14 @@
             });
         };
 
+        // 🛠️ BUG FIX 5: ป้องกันระบบค้นหาพัง กรณีชื่อบัญชีเป็นค่าว่าง (null/undefined)
         window.doSearch = () => {
             const t = document.getElementById('search').value.toLowerCase();
-            const filtered = membersData.filter(m => m.code.includes(t) || m.nick.toLowerCase().includes(t) || m.name.toLowerCase().includes(t));
+            const filtered = membersData.filter(m => 
+                (m.code || '').toString().toLowerCase().includes(t) || 
+                (m.nick || '').toLowerCase().includes(t) || 
+                (m.name || '').toLowerCase().includes(t)
+            );
             render(filtered);
         };
     </script>
